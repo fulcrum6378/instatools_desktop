@@ -1,1 +1,1 @@
-rootProject.name = "InstaToolsWeb"
+rootProject.name = "InstaTools"
