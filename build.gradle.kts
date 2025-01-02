@@ -7,7 +7,11 @@ plugins {
 }
 
 group = "ir.mahdiparastesh"
-version = "0.1.0"
+version = "0.1.5"
+
+application {
+    mainClass.set("ir.mahdiparastesh.instatools.MainKt")
+}
 
 repositories {
     mavenCentral()
