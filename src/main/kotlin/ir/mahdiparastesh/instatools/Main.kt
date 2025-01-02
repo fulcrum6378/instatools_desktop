@@ -1,13 +1,13 @@
 package ir.mahdiparastesh.instatools
 
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
+import ir.mahdiparastesh.instatools.json.Api
+import ir.mahdiparastesh.instatools.json.Api.Endpoint
+import ir.mahdiparastesh.instatools.json.Rest
 
-suspend fun main(args: Array<String>) {
-    val client = HttpClient(CIO)
-    val response: HttpResponse = client.get("https://ktor.io/")
-    println(response.status)
-    client.close()
+suspend fun main() { // args: Array<String>
+    val api = Api()
+    api.request<Rest.UserInfo>(Endpoint.INFO.url.format("8337021434"), Rest.UserInfo::class) { info ->
+        println(info.user.visName())
+    }
+    api.client.close()
 }
