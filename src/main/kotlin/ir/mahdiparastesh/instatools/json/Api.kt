@@ -18,7 +18,7 @@ class Api {
     }
 
     @Suppress("SpellCheckingInspection", "UastIncorrectHttpHeaderInspection")
-    suspend fun <JSON> request(
+    suspend fun <JSON> call(
         url: String,
         clazz: KClass<*>,
         httpMethod: HttpMethod = HttpMethod.Get,
