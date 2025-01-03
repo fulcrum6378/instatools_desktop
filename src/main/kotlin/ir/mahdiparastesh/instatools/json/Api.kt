@@ -7,6 +7,7 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import java.io.File
 import java.io.FileInputStream
 import kotlin.reflect.KClass
 
@@ -15,6 +16,14 @@ class Api {
         engine {
             proxy = ProxyBuilder.http("http://127.0.0.1:8580/")
         }
+    }
+    private var cookies: String? = null
+
+    fun loadCookies(path: String = "cookies.txt"): Boolean {
+        val f = File(path)
+        if (!f.exists()) return false
+        cookies = FileInputStream(f).use { String(it.readBytes()) }
+        return true
     }
 
     @Suppress("SpellCheckingInspection", "UastIncorrectHttpHeaderInspection")
@@ -30,14 +39,13 @@ class Api {
         val response: HttpResponse = client.request(url) {
             method = httpMethod
             headers {
-                val cookies = FileInputStream("cookies.txt").use { String(it.readBytes()) }
                 append("x-asbd-id", "129477")
-                if (cookies.contains("csrftoken=")) append(
+                if (cookies!!.contains("csrftoken=")) append(
                     "x-csrftoken",
-                    cookies.substringAfter("csrftoken=").substringBefore(";")
+                    cookies!!.substringAfter("csrftoken=").substringBefore(";")
                 )
                 append("x-ig-app-id", "936619743392459")
-                append("cookie", cookies)
+                append("cookie", cookies!!)
             }
             if (body != null) setBody(body)
         }

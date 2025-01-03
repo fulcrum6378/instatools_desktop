@@ -16,16 +16,21 @@ Copyright © Mahdi Parastesh - All Rights Reserved.
     if (interactive) println(
         """
 >> List of commands:
-
-i, info <ID>:                Find a user using their unique Instagram ID number.      e.g. i 8337021434
-q, quit:                     Quit the program.
+c, cookies <PATH>            Load cookies from `cookies.txt` or you can specify another file.
+d, download <LINK|PATH>      Download post via their single links or multiple links inside a text file.
+e, export <LINK>             Export a conversation via its link.
+i, info <ID>                 Find a user using their unique Instagram ID number. (e.g. i 8337021434)
+q, quit                      Quit the program.
 
     """.trimIndent()
     )
 
     // preparations
     val api = Api()
+    if (!api.loadCookies())
+        System.err.println("No cookies found; insert cookies in `cookies.txt` right beside this JAR...")
 
+    // execute commands
     var repeat = true
     var nothing = 0
     while (repeat) {
@@ -40,6 +45,20 @@ q, quit:                     Quit the program.
         }
 
         when (a[0]) {
+
+            "c", "cookies" -> {
+                if (if (a.size > 1) api.loadCookies(a[1]) else api.loadCookies())
+                    println("Cookies loaded!")
+                else System.err.println("Such file doesn't exist!")
+            }
+
+            "d", "download" -> {
+                // TODO
+            }
+
+            "e", "export" -> {
+                // TODO
+            }
 
             "i", "info" -> if (a.size != 2)
                 System.err.println("Invalid command!")
