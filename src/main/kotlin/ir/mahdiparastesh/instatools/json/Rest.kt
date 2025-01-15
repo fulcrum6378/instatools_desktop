@@ -7,6 +7,10 @@ open class Rest {
     lateinit var status: String
 
     class User(
+        //val primary_profile_link_type: Double,
+        //val show_fb_link_on_profile: Boolean,
+        //val show_fb_page_link_on_profile: Boolean,
+
         //val account_badges: Array<Map<String, *>>?,
         //val all_media_count: Float?,
         //val allowed_commenter_type: String?,
@@ -81,15 +85,15 @@ open class Rest {
 
     class UserInfo(val user: User) : Rest()
 
-    /*class InboxPage(
+    class InboxPage(
         //val has_pending_top_requests: Boolean,
         val inbox: Dm.Inbox,
         //val pending_requests_total: Double,
         //val seq_id: Double,
         //val viewer: User,
-    ) : Rest()*/
+    ) : Rest()
 
-    //class InboxThread(val thread: Dm.DmThread) : Rest()
+    class InboxThread(val thread: Dm.DmThread) : Rest()
 
     open class DynamicReelsList : Rest() {
         //var broadcast: Array<Any?>? = null

@@ -1,8 +1,6 @@
 package ir.mahdiparastesh.instatools
 
-import ir.mahdiparastesh.instatools.json.Api
-import ir.mahdiparastesh.instatools.json.GraphQl
-import ir.mahdiparastesh.instatools.json.Rest
+import ir.mahdiparastesh.instatools.json.*
 
 suspend fun main(args: Array<String>) {
     val interactive = args.isEmpty()
@@ -31,6 +29,7 @@ q, quit                      Quit the program.
     val api = Api()
     if (!api.loadCookies())
         System.err.println("No cookies found; insert cookies in `cookies.txt` right beside this JAR...")
+    val downloader = Downloader(api)
 
     // execute commands
     var repeat = true
@@ -54,9 +53,9 @@ q, quit                      Quit the program.
                 else System.err.println("Such file doesn't exist!")
             }
 
-            "d", "download" -> {
-                // TODO
-            }
+            "d", "download" -> if (a.size != 2)
+                System.err.println("Invalid command!")
+            else downloader.handleLink(a[1])  // TODO
 
             "e", "export" -> {
                 // TODO
@@ -68,7 +67,7 @@ q, quit                      Quit the program.
                 Api.Endpoint.PROFILE.url.format(a[1]), GraphQl::class
             ) { graphQl ->
                 val u = graphQl.data?.user ?: return@call
-                println(u.profile_pic_url)
+                println(u.id)
             }
 
             "i", "info" -> if (a.size != 2)

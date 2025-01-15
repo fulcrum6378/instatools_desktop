@@ -1,7 +1,13 @@
 package ir.mahdiparastesh.instatools
 
-import java.io.FileInputStream
+import ir.mahdiparastesh.instatools.json.Api
+import ir.mahdiparastesh.instatools.json.Rest
 
-fun main() {
-    println(FileInputStream("cookies.txt").use { String(it.readBytes()) })
+suspend fun main() {
+    val api = Api()
+    api.call<Rest.UserInfo>(
+        Api.Endpoint.INFO.url.format("8337021434"), Rest.UserInfo::class
+    ) { info ->
+        println(info.user.username)
+    }
 }
