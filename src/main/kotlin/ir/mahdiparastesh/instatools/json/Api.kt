@@ -50,6 +50,7 @@ class Api {
             if (body != null) setBody(body)
         }
         val res = response.bodyAsText()
+        println(res)
         if (response.status == HttpStatusCode.OK)
             onSuccess(Gson().fromJson(res, typeToken ?: clazz.java) as JSON)
         else {
@@ -126,4 +127,6 @@ class Api {
 
         RAW_QUERY("https://www.instagram.com/graphql/query"),
     }
+
+    annotation class Updated2025
 }

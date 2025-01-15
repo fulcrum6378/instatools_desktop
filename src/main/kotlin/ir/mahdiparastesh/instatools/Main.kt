@@ -1,6 +1,7 @@
 package ir.mahdiparastesh.instatools
 
 import ir.mahdiparastesh.instatools.json.Api
+import ir.mahdiparastesh.instatools.json.GraphQl
 import ir.mahdiparastesh.instatools.json.Rest
 
 suspend fun main(args: Array<String>) {
@@ -19,6 +20,7 @@ Copyright © Mahdi Parastesh - All Rights Reserved.
 c, cookies <PATH>            Load cookies from `cookies.txt` or you can specify another file.
 d, download <LINK|PATH>      Download post via their single links or multiple links inside a text file.
 e, export <LINK>             Export a conversation via its link.
+p, profile <USER>            Get information about a user's profile. (e.g. p fulcrum6378)
 i, info <ID>                 Find a user using their unique Instagram ID number. (e.g. i 8337021434)
 q, quit                      Quit the program.
 
@@ -58,6 +60,15 @@ q, quit                      Quit the program.
 
             "e", "export" -> {
                 // TODO
+            }
+
+            "p", "profile" ->  if (a.size != 2)
+                System.err.println("Invalid command!")
+            else api.call<GraphQl>(
+                Api.Endpoint.PROFILE.url.format(a[1]), GraphQl::class
+            ) { graphQl ->
+                val u = graphQl.data?.user ?: return@call
+                println(u.profile_pic_url)
             }
 
             "i", "info" -> if (a.size != 2)
