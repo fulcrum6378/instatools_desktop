@@ -13,7 +13,7 @@ class PageConfig(
     val define: HashMap<String, List<Any>>, val require: HashMap<String, List<Any>>
 ) {
     companion object {
-        private const val scheduledServerJS = "{\"require\":[[\"ScheduledServerJS\""
+        private const val SCHEDULED_SERVER_JS = "{\"require\":[[\"ScheduledServerJS\""
 
         @Suppress("UNCHECKED_CAST")
         private fun titledListToMap(list: Any): HashMap<String, List<Any>> {
@@ -24,10 +24,10 @@ class PageConfig(
             return map
         }
 
-        fun create(map: LinkedTreeMap<String, Any>): PageConfig =
+        private fun create(map: LinkedTreeMap<String, Any>): PageConfig =
             PageConfig(titledListToMap(map["define"]!!), titledListToMap(map["require"]!!))
 
-        fun findFromHtml(
+        suspend fun findFromHtml(
             rawHtml: String, isEvaluated: Boolean, onFailure: (e: Exception) -> Unit,
             onSuccess: suspend (wrapper: PageConfig) -> Unit,
         ) {
@@ -38,8 +38,8 @@ class PageConfig(
             // Find the JSON blocks containing "scheduledServerJS" and find XIGSharedData
             var read = html
             val jsons = arrayListOf<String>()
-            while (read.contains(scheduledServerJS)) {
-                read = read.substring(read.indexOf(scheduledServerJS))
+            while (read.contains(SCHEDULED_SERVER_JS)) {
+                read = read.substring(read.indexOf(SCHEDULED_SERVER_JS))
                 jsons.add(read.substringBefore("</script>"))
                 read = read.substringAfter("</script>")
             }

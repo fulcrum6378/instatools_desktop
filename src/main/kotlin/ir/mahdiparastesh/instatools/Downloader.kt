@@ -1,107 +1,79 @@
 package ir.mahdiparastesh.instatools
 
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
-import ir.mahdiparastesh.instatools.data.Queued
+import io.ktor.util.cio.*
+import io.ktor.utils.io.*
 import ir.mahdiparastesh.instatools.json.*
+import ir.mahdiparastesh.instatools.view.UiTools
+import ir.mahdiparastesh.instatools.view.UiTools.xFromSeconds
+import java.io.File
 
 class Downloader(private val api: Api) {
+    private val queue = arrayListOf<Queued>()
 
+    @Suppress("UNCHECKED_CAST")
     suspend fun handleLink(link: String) {
-        api.page(link, { status, html ->
-            /*if (status == 429) {
-                if (Downloads.active.value == true)
-                    Downloads.handler?.obtainMessage(Downloads.HANDLE_429)?.sendToTarget()
-                else eventNotification(Notify.ID_QUEUER_429) {
-                    setContentTitle(getString(R.string.downloads))
-                    setStyle(
-                        NotificationCompat.BigTextStyle().bigText(
-                            getString(R.string.queuer429)
-                        )
-                    )
-                    setContentIntent(
-                        PendingIntent.getActivity(
-                            c, 0, Intent(c, Downloads::class.java), ntfMutability()
-                        )
-                    )
-                }
-                finish(true)
-            } else {
-                Api.gotError(this@Queuer, handler, null, it, HANDLE_HTML_ERROR)
-                if (status != 404
-                ) it.networkResponse?.data?.let { ba -> String(ba) }?.also { html ->
-                    if (it.networkResponse?.statusCode == 500 &&
-                        html.contains(Login.LOGGED_OUT_MSG_500)
-                    ) needAuthentication()
-                    else if (System.getenv("test") == "1")
-                        throw Exception(status.toString())
-                } // if it.networkResponse == null, just Api.gotError; slow internet connection!
-            }*/
+        api.page(link, { status ->
+            when (status) {
+                429 -> throw IllegalStateException("Too man requests!")
+                404 -> throw IllegalStateException("Error 404!")
+                else -> throw IllegalStateException("Error $status!")
+            }
         }) { html ->
             PageConfig.findFromHtml(html, false, {
-                if (it is PageConfig.Companion.NeedAuth) needAuthentication()
-                else if (System.getenv("test") == "1") throw it
+                if (it is PageConfig.Companion.NeedAuth)
+                    throw IllegalStateException("You are logged out!")
+                else
+                    throw it
             }) { cnfWrapper ->
-                if (cur.link.contains("/p/") || cur.link.contains("/reel/")
-                    || cur.link.contains("/tv/")
-                ) {
+                if (link.contains("/p/") || link.contains("/reel/") || link.contains("/tv/")) {
                     val shortcode = when {
-                        cur.link.contains("/p/") -> cur.link.substringAfter("/p/")
-                        cur.link.contains("/reel/") -> cur.link.substringAfter("/reel/")
-                        cur.link.contains("/tv/") -> cur.link.substringAfter("/tv/")
-                        else -> throw Exception("IMPOSSIBLE")
+                        link.contains("/p/") -> link.substringAfter("/p/")
+                        link.contains("/reel/") -> link.substringAfter("/reel/")
+                        link.contains("/tv/") -> link.substringAfter("/tv/")
+                        else -> throw IllegalStateException("IMPOSSIBLE")
                     }.substringBefore("/")
 
                     api.call<GraphQl>(
-                        Api.Endpoint.RAW_QUERY.url, GraphQl::class, HttpMethod.Post,
-                        Api.graphQlBody(cnfWrapper, shortcode)
+                        Api.Endpoint.RAW_QUERY.url, GraphQl::class,
+                        HttpMethod.Post, Api.graphQlBody(cnfWrapper, shortcode)
                     ) { graphQl ->
-                        val med =
-                            graphQl.data?.xdt_api__v1__media__shortcode__web_info?.items?.firstOrNull()
-                                ?: throw IllegalStateException("med == null")
-                        var found = true
-                        val addOns = arrayListOf<Queued>()
+                        val med = graphQl.data?.xdt_api__v1__media__shortcode__web_info?.items?.firstOrNull()
+                            ?: throw IllegalStateException("med == null")
                         when {
-                            med.carousel_media != null -> for (car in med.carousel_media!!)
-                                if (cur.qud!!.url == null) cur.qud!!.apply {
-                                    date = med.taken_at.xFromSeconds()
-                                    userId = med.user.pk
-                                    userName = med.user.username
-                                    itemId = car.pk
-                                    url = car.nearest(Versioned.BEST)
-                                    thumb = med.thumb()
-                                    mediaType = car.media_type.toInt().toByte()
-                                    dur = car.video_duration?.toLong()
-                                    caption = med.caption?.text
-                                } else addOns.add(
-                                    Queued(
-                                        cur.qud!!.addedAt, cur.qud!!.link, cur.qud!!.date,
-                                        med.user.pk, med.user.username,
-                                        car.pk, car.nearest(Versioned.BEST),
-                                        car.thumb(), car.media_type.toInt().toByte(),
-                                        dur = car.video_duration?.toLong(),
-                                        caption = med.caption?.text
-                                    )
+                            med.carousel_media != null -> for (car in med.carousel_media!!) queue.add(
+                                Queued(
+                                    link,
+                                    med.taken_at.xFromSeconds(),
+                                    med.user.pk,
+                                    med.user.username,
+                                    car.pk,
+                                    car.nearest(Versioned.BEST),
+                                    car.thumb(),
+                                    car.media_type.toInt().toByte(),
+                                    med.caption?.text
                                 )
+                            )
 
-                            med.image_versions2 != null -> cur.qud!!.apply {
-                                date = med.taken_at.xFromSeconds()
-                                userId = med.user.pk
-                                userName = med.user.username
-                                itemId = med.pk
-                                url = med.nearest(Versioned.BEST)
-                                thumb = med.thumb()
-                                mediaType = med.media_type.toInt().toByte()
-                                dur = med.video_duration?.toLong()
-                                caption = med.caption?.text
-                            }
-
-                            else -> found = false
+                            med.image_versions2 != null -> queue.add(
+                                Queued(
+                                    link,
+                                    med.taken_at.xFromSeconds(),
+                                    med.user.pk,
+                                    med.user.username,
+                                    med.pk,
+                                    med.nearest(Versioned.BEST),
+                                    med.thumb(),
+                                    med.media_type.toInt().toByte(),
+                                    med.caption?.text
+                                )
+                            )
                         }
-                        if (found) handleQueued(cur.qud!!, addOns)
-                        else {
-                            linkHandled()
-                            if (download?.active != true) finish(false)
-                        }
+                        download()
                     }
                     return@findFromHtml; }
                 // ELSE IF IT'S A STORY/HIGHLIGHT or an invalid link...
@@ -115,70 +87,61 @@ class Downloader(private val api: Api) {
                         Gson().fromJson(Gson().toJson(it), PageConfig.PolarisRoot::class.java)
                     }
                 if (root == null) {
-                    Api.gotError(this@Queuer, handler, null, null, HANDLE_HTML_ERROR)
                     if (System.getenv("test") == "1")
-                        openFileOutput("${cur.qud?.addedAt}.json", 0)
-                            .use { it.write(Gson().toJson(cnfWrapper).encodeToByteArray()) }
-                    return@findFromHtml; }
+                        println(Gson().toJson(cnfWrapper))
+                    throw IllegalStateException("Couldn't extract configurations from HTML!")
+                }
 
                 when (root.rootView.resource.__dr) {
                     "PolarisStoriesV3Root.react",
-                    "PolarisStoriesMediaRoot.react" -> reqQueue.adder =
-                        Api<Rest.Reels<Rest.StoryReel>>(
-                            this, Api.Endpoint.REEL_ITEM.url.format(root.rootView.props.user_id),
-                            Rest.Reels::class, handler, autoQueue = false, cache = true,
-                            typeToken = object : TypeToken<Rest.Reels<Rest.StoryReel>>() {}.type
-                        ) { reels ->
-                            val rel = reels.reels.getOrNull(root.rootView.props.user_id)
-                            val med = rel?.items?.find { it.pk == root.params.initial_media_id }
-                            if (med == null) {
-                                handler?.obtainMessage(HANDLE_API_RES_ERROR)
-                                    ?.sendToTarget(); return@Api; }
-                            cur.qud!!.apply {
-                                date = med.taken_at.xFromSeconds()
-                                userId = rel.user.pk
-                                userName = rel.user.username
-                                itemId = med.pk
-                                url = med.nearest(Versioned.BEST)
-                                thumb = med.thumb()
-                                mediaType = med.media_type.toInt().toByte()
-                                dur = med.video_duration?.toLong()
-                                caption = med.caption?.text
-                            }
-                            handleQueued(cur.qud!!, null)
-                        }
+                    "PolarisStoriesMediaRoot.react" -> api.call<Rest.Reels<Rest.StoryReel>>(
+                        Api.Endpoint.REEL_ITEM.url.format(root.rootView.props.user_id), Rest.Reels::class,
+                        typeToken = object : TypeToken<Rest.Reels<Rest.StoryReel>>() {}.type
+                    ) { reels ->
+                        val rel = reels.reels.getOrElse(root.rootView.props.user_id) { null }
+                        val med = rel?.items?.find { it.pk == root.params.initial_media_id }
+                            ?: throw IllegalStateException("med == null")
+                        queue.add(
+                            Queued(
+                                link,
+                                med.taken_at.xFromSeconds(),
+                                rel.user.pk,
+                                rel.user.username,
+                                med.pk,
+                                med.nearest(Versioned.BEST),
+                                med.thumb(),
+                                med.media_type.toInt().toByte(),
+                                med.caption?.text
+                            )
+                        )
+                        download()
+                    }
 
                     "PolarisStoriesV3HighlightsRoot.react",
-                    "PolarisStoriesMediaHighlightsRoot.react" -> reqQueue.adder =
-                        Api<Rest.Reels<Rest.HighlightReel>>(
-                            this, Api.Endpoint.REEL_ITEM.url.format(
-                                "highlight%3A${root.params.highlight_reel_id}"
-                            ), Rest.Reels::class, handler, autoQueue = false, cache = true,
-                            typeToken = object : TypeToken<Rest.Reels<Rest.HighlightReel>>() {}.type
-                        ) { reels ->
-                            val rel = reels.reels.getOrNull(
-                                "highlight:${root.params.highlight_reel_id}"
+                    "PolarisStoriesMediaHighlightsRoot.react" -> api.call<Rest.Reels<Rest.HighlightReel>>(
+                        Api.Endpoint.REEL_ITEM.url.format("highlight%3A${root.params.highlight_reel_id}"),
+                        Rest.Reels::class, typeToken = object : TypeToken<Rest.Reels<Rest.HighlightReel>>() {}.type
+                    ) { reels ->
+                        val rel = reels.reels.getOrElse("highlight:${root.params.highlight_reel_id}") { null }
+                        val med = rel?.items?.find {
+                            it.id == link.substringAfter("story_media_id=").substringBefore("&")
+                        } ?: throw IllegalStateException("med == null")
+
+                        queue.add(
+                            Queued(
+                                link,
+                                med.taken_at.xFromSeconds(),
+                                rel.user.pk,
+                                rel.user.username,
+                                med.pk,
+                                med.nearest(Versioned.BEST),
+                                med.thumb(),
+                                med.media_type.toInt().toByte(),
+                                med.caption?.text,
                             )
-                            val med = rel?.items?.find {
-                                it.id == cur.link.substringAfter("story_media_id=")
-                                    .substringBefore("&")
-                            }
-                            if (med == null) {
-                                handler?.obtainMessage(HANDLE_API_RES_ERROR)
-                                    ?.sendToTarget(); return@Api; }
-                            cur.qud!!.apply {
-                                date = med.taken_at.xFromSeconds()
-                                userId = rel.user.pk
-                                userName = rel.user.username
-                                itemId = med.pk
-                                url = med.nearest(Versioned.BEST)
-                                thumb = med.thumb()
-                                mediaType = med.media_type.toInt().toByte()
-                                dur = med.video_duration?.toLong()
-                                caption = med.caption?.text
-                            }
-                            handleQueued(cur.qud!!, null)
-                        }
+                        )
+                        download()
+                    }
                     // Instagram cannot distinguish between contents of a private account and
                     // link of a public account itself; therefore this case should not be applied.
                     /*"PolarisProfileRoot.react" -> {
@@ -187,20 +150,48 @@ class Downloader(private val api: Api) {
                             .invokeOnCompletion { linkHandled() }
                     }*/
                     "PolarisLoginRoot.react", "PolarisChallengeRoot.react" ->
-                        needAuthentication()
+                        throw IllegalStateException("You are logged out!")
 
                     else -> {
                         if (System.getenv("test") == "1" && root.rootView.resource.__dr !in arrayOf(
                                 "PolarisErrorRoot.react", "PolarisProfileRoot.react"
                             )
-                        ) {
-                            openFileOutput("unknown_api_${cur.qud?.addedAt}.json", 0)
-                                .use { it.write(Gson().toJson(cnfWrapper).encodeToByteArray()) }
-                            throw Exception(root.rootView.resource.__dr)
-                        }
+                        ) throw Exception(Gson().toJson(cnfWrapper))
                     }
                 }
             }
         }
+    }
+
+    private suspend fun download() {
+        val downloads = File("./downloads/")
+        if (!downloads.isDirectory) downloads.mkdir()
+
+        queue.forEach { q ->
+            api.client.get(q.url!!).bodyAsChannel()
+                .copyAndClose(File(downloads, q.fileName()).writeChannel())
+        }
+        queue.clear()
+    }
+
+    data class Queued(
+        val link: String,
+        var date: Long,
+        var userId: String,
+        var userName: String? = null,
+        var itemId: String? = null,
+        var url: String? = null,
+        var thumb: String? = null,
+        var mediaType: Byte,
+        var caption: String? = null,
+    ) {
+        fun fileName() = "${userName}_${UiTools.fileDateTime(date)}_" +
+                "$itemId.${MediaType.entries.find { it.inDb == mediaType }!!.ext}"
+    }
+
+    enum class MediaType(val ext: String, val inDb: Byte) {
+        PHOTO("jpg", 1),
+        VIDEO("mp4", 2),
+        AUDIO("m4a", 3),
     }
 }

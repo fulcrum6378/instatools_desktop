@@ -34,7 +34,7 @@ class Api {
         body: String? = null,
         typeToken: java.lang.reflect.Type? = null,
         onError: ((status: Int, body: String) -> Unit)? = null,
-        onSuccess: (json: JSON) -> Unit
+        onSuccess: suspend (json: JSON) -> Unit
     ) {
         val response: HttpResponse = client.request(url) {
             method = httpMethod
@@ -61,17 +61,16 @@ class Api {
 
     suspend fun page(
         url: String,
-        onError: (status: Int, html: String) -> Unit,
-        onSuccess: (html: String) -> Unit
+        onError: (status: Int) -> Unit,
+        onSuccess: suspend (html: String) -> Unit
     ) {
         val response: HttpResponse = client.get(url) {
             headers { append("cookie", cookies!!) }
         }
-        val text = response.bodyAsText()
         if (response.status == HttpStatusCode.OK)
-            onSuccess(text)
+            onSuccess(response.bodyAsText())
         else
-            onError(response.status.value, text)
+            onError(response.status.value)
     }
 
     companion object {

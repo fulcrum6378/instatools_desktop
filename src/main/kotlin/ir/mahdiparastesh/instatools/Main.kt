@@ -55,7 +55,7 @@ q, quit                      Quit the program.
 
             "d", "download" -> if (a.size != 2)
                 System.err.println("Invalid command!")
-            else downloader.handleLink(a[1])  // TODO
+            else downloader.handleLink(a[1])
 
             "e", "export" -> {
                 // TODO
