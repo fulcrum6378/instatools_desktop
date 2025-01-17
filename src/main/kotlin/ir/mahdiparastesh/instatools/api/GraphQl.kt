@@ -1,4 +1,4 @@
-package ir.mahdiparastesh.instatools.json
+package ir.mahdiparastesh.instatools.api
 
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -24,7 +24,6 @@ class GraphQl(val data: GraphQlData?) : Rest() {
         //val toast_content_on_load: Any?
     )*/
 
-    @Api.Updated2025
     class User(
         //val ai_agent_type: Any?,
         //val biography: String?,

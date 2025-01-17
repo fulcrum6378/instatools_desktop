@@ -1,9 +1,9 @@
-package ir.mahdiparastesh.instatools.view
+package ir.mahdiparastesh.instatools
 
 import java.util.*
 
 @Suppress("MemberVisibilityCanBePrivate")
-object UiTools {
+object Utils {
     /** Helper class for turning 1 to "01". */
     fun z(n: Int): String {
         val s = n.toString()

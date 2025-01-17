@@ -1,7 +1,7 @@
 package ir.mahdiparastesh.instatools
 
-import ir.mahdiparastesh.instatools.json.Api
-import ir.mahdiparastesh.instatools.json.Rest
+import ir.mahdiparastesh.instatools.api.Api
+import ir.mahdiparastesh.instatools.api.Rest
 
 suspend fun main() {
     val api = Api()

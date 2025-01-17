@@ -1,6 +1,6 @@
 package ir.mahdiparastesh.instatools
 
-import ir.mahdiparastesh.instatools.json.*
+import ir.mahdiparastesh.instatools.api.*
 
 suspend fun main(args: Array<String>) {
     val interactive = args.isEmpty()
@@ -55,13 +55,14 @@ q, quit                      Quit the program.
 
             "d", "download" -> if (a.size != 2)
                 System.err.println("Invalid command!")
-            else downloader.handleLink(a[1])
+            else
+                downloader.handleLink(a[1])
 
             "e", "export" -> {
                 // TODO
             }
 
-            "p", "profile" ->  if (a.size != 2)
+            "p", "profile" -> if (a.size != 2)
                 System.err.println("Invalid command!")
             else api.call<GraphQl>(
                 Api.Endpoint.PROFILE.url.format(a[1]), GraphQl::class

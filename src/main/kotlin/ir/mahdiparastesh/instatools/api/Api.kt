@@ -1,4 +1,4 @@
-package ir.mahdiparastesh.instatools.json
+package ir.mahdiparastesh.instatools.api
 
 import com.google.gson.Gson
 import io.ktor.client.*
@@ -148,6 +148,4 @@ class Api {
 
         RAW_QUERY("https://www.instagram.com/graphql/query"),
     }
-
-    annotation class Updated2025
 }

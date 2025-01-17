@@ -1,17 +1,14 @@
 package ir.mahdiparastesh.instatools
 
 import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import com.google.gson.internal.LinkedTreeMap
-import com.google.gson.reflect.TypeToken
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.http.*
 import io.ktor.util.cio.*
 import io.ktor.utils.io.*
-import ir.mahdiparastesh.instatools.json.*
-import ir.mahdiparastesh.instatools.json.Api.Companion.xFromSeconds
-import ir.mahdiparastesh.instatools.view.UiTools
+import ir.mahdiparastesh.instatools.api.Api
+import ir.mahdiparastesh.instatools.api.Api.Companion.xFromSeconds
+import ir.mahdiparastesh.instatools.api.Media
+import ir.mahdiparastesh.instatools.api.RelayPrefetchedStreamCache
 import java.io.File
 
 class Downloader(private val api: Api) {
@@ -26,14 +23,45 @@ class Downloader(private val api: Api) {
             }
         }) { html ->
             //println(html)
-            val config = RelayPrefetchedStreamCache.crawl(html)
-            //println(Gson().toJson(config))
+            val data = RelayPrefetchedStreamCache.crawl(html)
+            //println(Gson().toJson(data))
 
             // Post, Reel, TV TODO TV?!
-            if ("PolarisPostRootQueryRelayPreloader" in config) {
-                val medMap = (config["PolarisPostRootQueryRelayPreloader"]!!["items"] as List<Map<String, Any>>)[0]
-                val med = Gson().fromJson(Gson().toJson(medMap), Media::class.java)
-                println(med.code)
+            if ("PolarisPostRootQueryRelayPreloader" in data) {
+                @Suppress("UNCHECKED_CAST")
+                val medMap = (data["PolarisPostRootQueryRelayPreloader"]!!["items"] as List<Map<String, Any>>)[0]
+                val med = Gson().fromJson(Gson().toJson(medMap), Media.Post::class.java)
+
+                when {
+                    med.carousel_media != null -> for (car in med.carousel_media) queue.add(
+                        Queued(
+                            link,
+                            med.taken_at.xFromSeconds(),
+                            med.user.pk,
+                            med.user.username,
+                            car.pk,
+                            car.nearest(Media.BEST),
+                            car.thumb(),
+                            car.media_type.toInt().toByte(),
+                            med.caption.text
+                        )
+                    )
+
+                    else -> queue.add(
+                        Queued(
+                            link,
+                            med.taken_at.xFromSeconds(),
+                            med.user.pk,
+                            med.user.username,
+                            med.pk,
+                            med.nearest(Media.BEST),
+                            med.thumb(),
+                            med.media_type.toInt().toByte(),
+                            med.caption.text
+                        )
+                    )
+                }
+                download()
             }
             return@page
 
@@ -51,36 +79,7 @@ class Downloader(private val api: Api) {
                 ) { graphQl ->
                     val med = graphQl.data?.xdt_api__v1__media__shortcode__web_info?.items?.firstOrNull()
                         ?: throw IllegalStateException("med == null")
-                    when {
-                        med.carousel_media != null -> for (car in med.carousel_media!!) queue.add(
-                            Queued(
-                                link,
-                                med.taken_at.xFromSeconds(),
-                                med.user.pk,
-                                med.user.username,
-                                car.pk,
-                                car.nearest(Versioned.BEST),
-                                car.thumb(),
-                                car.media_type.toInt().toByte(),
-                                med.caption?.text
-                            )
-                        )
 
-                        med.image_versions2 != null -> queue.add(
-                            Queued(
-                                link,
-                                med.taken_at.xFromSeconds(),
-                                med.user.pk,
-                                med.user.username,
-                                med.pk,
-                                med.nearest(Versioned.BEST),
-                                med.thumb(),
-                                med.media_type.toInt().toByte(),
-                                med.caption?.text
-                            )
-                        )
-                    }
-                    download()
                 }
                 return@page; }
             // ELSE IF IT'S A STORY/HIGHLIGHT or an invalid link...
@@ -186,7 +185,7 @@ class Downloader(private val api: Api) {
         var mediaType: Byte,
         var caption: String? = null,
     ) {
-        fun fileName() = "${userName}_${UiTools.fileDateTime(date)}_" +
+        fun fileName() = "${userName}_${Utils.fileDateTime(date)}_" +
                 "$itemId.${MediaType.entries.find { it.inDb == mediaType }!!.ext}"
     }
 

@@ -1,4 +1,4 @@
-package ir.mahdiparastesh.instatools.json
+package ir.mahdiparastesh.instatools.api
 
 @Suppress(
     "SpellCheckingInspection", "MemberVisibilityCanBePrivate", "PropertyName", "unused"
@@ -6,7 +6,15 @@ package ir.mahdiparastesh.instatools.json
 open class Rest {
     lateinit var status: String
 
-    class User(
+    interface User {
+        val pk: String
+        val id: String
+        val username: String
+        val profile_pic_url: String
+        val is_verified: Boolean
+    }
+
+    class UserOld(
         //val primary_profile_link_type: Double,
         //val show_fb_link_on_profile: Boolean,
         //val show_fb_page_link_on_profile: Boolean,
@@ -44,7 +52,7 @@ open class Rest {
 
     /** Both following and followers receive this API. */
     class Follow(
-        val users: Array<User>? = null,
+        val users: Array<UserOld>? = null,
         /* true for @fulcrum6378 which needs multiple fetches,
          * false for @instatools.apk which requires a single one. */
         //val big_list: Boolean,
@@ -83,80 +91,80 @@ open class Rest {
         //val subscribed: Boolean?, // only in mute/unmute and show(one)
     )
 
-    class UserInfo(val user: User) : Rest()
+    class UserInfo(val user: UserOld) : Rest()
 
-    class InboxPage(
+    /*class InboxPage(
         //val has_pending_top_requests: Boolean,
         val inbox: Dm.Inbox,
         //val pending_requests_total: Double,
         //val seq_id: Double,
         //val viewer: User,
-    ) : Rest()
+    ) : Rest()*/
 
-    class InboxThread(val thread: Dm.DmThread) : Rest()
+    //class InboxThread(val thread: Dm.DmThread) : Rest()
 
     open class DynamicReelsList : Rest() {
         //var broadcast: Array<Any?>? = null
     }
 
-    class Story(val reel: StoryReel?) : DynamicReelsList()
+    //class Story(val reel: StoryReel?) : DynamicReelsList()
 
-    interface TrayWrapper<T> where T : Reel {
+    /*interface TrayWrapper<T> where T : Reel {
         val tray: Array<T>
-    }
+    }*/
 
-    class Highlights(
+    /*class Highlights(
         override val tray: Array<HighlightReel>,
         //val show_empty_state: Boolean,
-    ) : Rest(), TrayWrapper<HighlightReel>
+    ) : Rest(), TrayWrapper<HighlightReel>*/
 
-    class Reels<R>(
+    /*class Reels<R>(
         val reels: Map<String, R>,
         //val reels_media: Array<R>,
-    ) : Rest() where R : Reel
+    ) : Rest() where R : Reel*/
 
-    abstract class Reel(
+    /*abstract class Reel(
         //val ad_expiry_timestamp_in_millis: Any?,
         //val can_gif_quick_reply: Boolean,
         //val can_reply: Boolean,
         //val can_reshare: Boolean,
         //val is_cta_sticker_available: Any?,
-        var items: Array<Media>?,
+        var items: Array<MediaOld>?,
         //val latest_reel_media: Double,
         //val reel_type: String,
         //val seen: Double,
-        val user: User,
-    )
+        val user: UserOld
+    )*/
 
-    class StoryReel(
+    /*class StoryReel(
         //val expiring_at: Double,
         //val has_besties_media: Boolean?,
         //val has_fan_club_media: Boolean?,
         //val id: Double, // User ID is the same as that of the reel!
-        items: Array<Media>,
+        items: Array<MediaOld>,
         //val media_count: Float,
         //val media_ids: Array<String>,
         //val prefetch_count: Float,
-        user: User
-    ) : Reel(items, user)
+        user: UserOld
+    ) : Reel(items, user)*/
 
-    class HighlightReel(
+    /*class HighlightReel(
         val cover_media: HighlightCover?, // uncertain "?"
         //val created_at: Double,
         val id: String, // starts with "highlight:"
         //val is_converted_to_clips: Boolean,
         //val is_pinned_highlight: Boolean,
-        items: Array<Media>?,
+        items: Array<MediaOld>?,
         val media_count: Float,
         //val media_ids: Array<String>?,
         //val prefetch_count: Double,
         //val ranked_position: Double,
         //val seen_ranked_position: Double,
         val title: String,
-        user: User
-    ) : Reel(items, user)
+        user: UserOld
+    ) : Reel(items, user)*/
 
-    class HighlightCover(val cropped_image_version: Media.Candidate/*, val crop_rect: Any?*/)
+    //class HighlightCover(val cropped_image_version: MediaOld.Candidate/*, val crop_rect: Any?*/)
 
     class Search(
         //val places: Array<HashMap<String, *>>,
@@ -166,7 +174,7 @@ open class Rest {
         val users: Array<ItemUser>,
     ) : Rest()
 
-    class ItemUser(val position: Float, val user: User)
+    class ItemUser(val position: Float, val user: UserOld)
 
     class Signing/*(val login_nonce: String?)*/ : Rest()
 
