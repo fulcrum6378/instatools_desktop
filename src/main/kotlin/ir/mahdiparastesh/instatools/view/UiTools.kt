@@ -10,9 +10,6 @@ object UiTools {
         return if (s.length == 1) "0$s" else s
     }
 
-    /** Converts a seconds timestamp to a milliseconds one. */
-    fun Double.xFromSeconds() = toLong() * 1000L
-
     /** @return a datetime text to be used in a file name. */
     fun fileDateTime(time: Long): String {
         val cal = Calendar.getInstance().apply { timeInMillis = time }

@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "ir.mahdiparastesh"
-version = "0.3.5"
+version = "0.4.0"
 
 application {
     mainClass.set("ir.mahdiparastesh.instatools.MainKt")
@@ -22,5 +22,4 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("io.ktor:ktor-client-cio:$ktorVersion")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
-    implementation("org.apache.commons:commons-text:1.11.0")
 }

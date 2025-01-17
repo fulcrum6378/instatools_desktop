@@ -65,7 +65,10 @@ class Api {
         onSuccess: suspend (html: String) -> Unit
     ) {
         val response: HttpResponse = client.get(url) {
-            headers { append("cookie", cookies!!) }
+            headers {
+                append("accept", "text/html")
+                append("cookie", cookies!!)
+            }
         }
         if (response.status == HttpStatusCode.OK)
             onSuccess(response.bodyAsText())
@@ -76,44 +79,8 @@ class Api {
     companion object {
         const val POST_HASH = "8c2a529969ee035a5063f2fc8602a0fd"
 
-        @Suppress("SpellCheckingInspection", "UNCHECKED_CAST")
-        fun graphQlBody(cnfWrapper: PageConfig, shortcode: String): String {
-            val siteData = cnfWrapper.define["SiteData"]!![1] as Map<String, Any>
-            return "access_token=" +
-                    "&__d=" + siteData["haste_site"] +
-                    "&__user=0" +
-                    "&__a=1" +
-                    "&__dyn=7xeUmwlE7ibwKBWo2vwAxu13w8CewSwMwNw9G2S0lW4o0B-q1ew65xO0F" +
-                    "E2awt81sbzoaEd82lwv89k2C1Fwc61uwZx-0z8jwae4UaEW0D888cobEaU2eUlwh" +
-                    "E2Lx_w4HwJwSyES1Twoob82ZwiU8UdUbGwbO1pw" /*TODO*/ +
-                    "&__csr=glhcrillJsB9N5GL8F6LV9lGm4oSAZUOVoCimE8ideXGXAgynCF5KEy2y" +
-                    "00gc905eyRc02JG3C4m4o7y0zyw4Za2ye3ywXm3O6204pjgYwKoEy2u7u1RwjlG0" +
-                    "j10PwbZ0ww15Kbm0oK0YU" /*TODO*/ +
-                    "&__req=3" /*TODO d or 3?*/ +
-                    "&__hs=" + siteData["haste_session"] +
-                    "&dpr=1" +
-                    "&__ccg=" + (cnfWrapper.define["WebConnectionClassServerGuess"]!![1]
-                    as Map<String, String>)["connectionClass"]!! +
-                    "&__rev=" + (siteData["client_revision"] as Double)
-                .toInt().toString() +
-                    "&__s=eiw83y%3Aude3gw%3Ap6j381" /*TODO*/ +
-                    "&__hsi=" + siteData["haste_session"] +
-                    "&__comet_req=7" +
-                    "&fb_dtsg=" + ((cnfWrapper.define["DTSGInitialData"]!![1]
-                    as Map<String, String>)["token"] ?: "") + // or DTSGInitData and async_get_token
-                    // DTSGInitData[1]["token"] is null in guest mode.
-                    "&jazoest=26314" /*TODO 26314 or 26301*/ +
-                    "&lsd=" + (cnfWrapper.define["LSD"]!![1] as Map<String, String>)["token"]!! +
-                    "&__spin_r=" + (siteData["__spin_r"] as Double).toInt() +
-                    "&__spin_b=" + siteData["__spin_b"] +
-                    "&__spin_t=" + (siteData["__spin_t"] as Double).toInt() +
-                    "&fb_api_caller_class=RelayModern" +
-                    "&fb_api_req_friendly_name=PolarisPostRootQuery" +
-                    /*TODO usePolarisSaveMediaSaveMutation or PolarisPostRootQuery*/
-                    "&variables=%7B%22shortcode%22%3A%22$shortcode%22%7D" /*TODO shortcode or media id?!?*/ +
-                    "&server_timestamps=true" +
-                    "&doc_id=18086740648321782" /*TODO*/
-        }
+        /** Converts a seconds timestamp to a milliseconds one. */
+        fun Double.xFromSeconds() = toLong() * 1000L
     }
 
     @Suppress("unused")
