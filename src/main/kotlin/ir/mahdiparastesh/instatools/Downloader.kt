@@ -23,8 +23,9 @@ class Downloader(private val api: Api) {
             }
         }) { html ->
             //println(html)
+            //return@page
             val data = RelayPrefetchedStreamCache.crawl(html)
-            //println(Gson().toJson(data))
+            println("Found: " + data.keys.joinToString(", "))
 
             // Post, Reel, TV TODO TV?!
             if ("PolarisPostRootQueryRelayPreloader" in data) {
@@ -63,28 +64,8 @@ class Downloader(private val api: Api) {
                 }
                 download()
             }
-            return@page
 
-            /*if (link.contains("/p/") || link.contains("/reel/") || link.contains("/tv/")) {
-                val shortcode = when {
-                    link.contains("/p/") -> link.substringAfter("/p/")
-                    link.contains("/reel/") -> link.substringAfter("/reel/")
-                    link.contains("/tv/") -> link.substringAfter("/tv/")
-                    else -> throw IllegalStateException("IMPOSSIBLE")
-                }.substringBefore("/")
-
-                api.call<GraphQl>(
-                    Api.Endpoint.RAW_QUERY.url, GraphQl::class,
-                    HttpMethod.Post, Api.graphQlBody(cnfWrapper, shortcode)
-                ) { graphQl ->
-                    val med = graphQl.data?.xdt_api__v1__media__shortcode__web_info?.items?.firstOrNull()
-                        ?: throw IllegalStateException("med == null")
-
-                }
-                return@page; }
-            // ELSE IF IT'S A STORY/HIGHLIGHT or an invalid link...
-
-            val root = ((cnfWrapper.require.keys
+            /*val root = ((cnfWrapper.require.keys
                 .find { it.startsWith("CometPlatformRootClient") }
                 ?.let { cnfWrapper.require[it] }
                 ?.getOrNull(2) as? List<Any>)
@@ -167,9 +148,11 @@ class Downloader(private val api: Api) {
         val downloads = File("./downloads/")
         if (!downloads.isDirectory) downloads.mkdir()
 
+        var fn: String
         queue.forEach { q ->
-            api.client.get(q.url!!).bodyAsChannel()
-                .copyAndClose(File(downloads, q.fileName()).writeChannel())
+            fn = q.fileName()
+            api.client.get(q.url!!).bodyAsChannel().copyAndClose(File(downloads, fn).writeChannel())
+            println("Downloaded $fn")
         }
         queue.clear()
     }

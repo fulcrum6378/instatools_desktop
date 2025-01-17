@@ -1,16 +1,14 @@
-@file:Suppress("PropertyName", "SpellCheckingInspection")
-
 package ir.mahdiparastesh.instatools.api
 
 import kotlin.math.abs
 
-interface Media : Audible {
+@Suppress("PropertyName", "SpellCheckingInspection")
+interface Media {
     val pk: String
     val id: String
     val accessibility_caption: String?
-
-    //val is_dash_eligible: Float?
-    //val video_dash_manifest: String?
+    val is_dash_eligible: Any? // sometimes boolean sometimes double(0|1)
+    val video_dash_manifest: String?
     val original_height: Float
     val original_width: Float
     val image_versions2: ImageVersions2
@@ -24,8 +22,7 @@ interface Media : Audible {
     val media_type: Float
     val display_uri: String?
     val user: MediaUser?
-
-    //val number_of_qualities: Float?
+    val number_of_qualities: Float?
     val taken_at: Double
     val previous_submitter: Any?
     val link: Any?
@@ -112,7 +109,6 @@ interface Media : Audible {
         val commenting_disabled_for_viewer: Any?,
     ) : Media {
 
-        @Suppress("unused")
         fun hasAudio() =
             has_audio == true || (carousel_media != null && carousel_media.any { it.media_type == 2f })
     }
@@ -303,16 +299,6 @@ interface Media : Audible {
     fun thumb() = //(this as Media).thumbnails?.sprite_urls?.getOrNull(0)
         (if (this is Post) carousel_media?.getOrNull(0)?.nearest(WORST, true) else null)
             ?: nearest(WORST, true)
-}
-
-/**
- * Any IG post or reel that contains Audio must implement this in order for the audio file to be
- * able to be downloaded.
- */
-interface Audible {
-    val is_dash_eligible: Any? // sometimes boolean sometimes double(0|1)
-    val video_dash_manifest: String?
-    val number_of_qualities: Float?
 
     fun audioUrl(): String? {
         if (video_dash_manifest == null) return null
@@ -322,6 +308,4 @@ interface Audible {
             .substringAfter(">")
             .substringBefore("</BaseURL>")
     }
-    // M4A ought not to be stored as MP3!
-    // https://www.veed.io/convert/m4a-to-mp3
 }

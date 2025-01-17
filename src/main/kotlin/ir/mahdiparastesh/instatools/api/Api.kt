@@ -4,6 +4,8 @@ import com.google.gson.Gson
 import io.ktor.client.*
 import io.ktor.client.engine.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
+import io.ktor.client.plugins.cookies.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -13,17 +15,29 @@ import kotlin.reflect.KClass
 
 class Api {
     val client = HttpClient(CIO) {
+        install(HttpCookies)
         engine {
             proxy = ProxyBuilder.http("http://127.0.0.1:8580/")
         }
     }
-    private var cookies: String? = null
+    private var cookies: String? = null  // FIXME SAVE COOKIES ON DESTROY
+    private var cookiesInjectedOnce = false
 
     fun loadCookies(path: String = "cookies.txt"): Boolean {
         val f = File(path)
         if (!f.exists()) return false
         cookies = FileInputStream(f).use { String(it.readBytes()) }
         return true
+    }
+
+    private fun HttpMessageBuilder.injectCookies() {
+        //if (cookiesInjectedOnce) return
+        var kv: List<String>
+        for (cookie in cookies!!.split("; ")) {
+            kv = cookie.split("=")
+            cookie(kv[0], kv[1], domain = IG_DOMAIN)
+        }
+        cookiesInjectedOnce = true
     }
 
     @Suppress("SpellCheckingInspection", "UastIncorrectHttpHeaderInspection")
@@ -39,14 +53,15 @@ class Api {
         val response: HttpResponse = client.request(url) {
             method = httpMethod
             headers {
+                append("accept", "*/*")
                 append("x-asbd-id", "129477")
                 if (cookies!!.contains("csrftoken=")) append(
                     "x-csrftoken",
                     cookies!!.substringAfter("csrftoken=").substringBefore(";")
                 )
                 append("x-ig-app-id", "936619743392459")
-                append("cookie", cookies!!)
             }
+            injectCookies()
             if (body != null) setBody(body)
         }
         val text = response.bodyAsText()
@@ -59,6 +74,31 @@ class Api {
         }
     }
 
+    /*fetch("https://www.instagram.com/lucy.ai23/",
+    {
+        "headers": {
+        "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,es-US;q=0.6,es;q=0.5,ru-RU;q=0.4,ru;q=0.3,de-DE;q=0.2,de;q=0.1,cs-CZ;q=0.1,cs;q=0.1,en-US;q=0.1",
+        "dpr": "1",
+        "priority": "u=0, i",
+        "sec-ch-prefers-color-scheme": "light",
+        "sec-ch-ua": "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
+        "sec-ch-ua-full-version-list": "\"Google Chrome\";v=\"131.0.6778.140\", \"Chromium\";v=\"131.0.6778.140\", \"Not_A Brand\";v=\"24.0.0.0\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-model": "\"\"",
+        "sec-ch-ua-platform": "\"Windows\"",
+        "sec-ch-ua-platform-version": "\"10.0.0\"",
+        "sec-fetch-dest": "document",
+        "sec-fetch-mode": "navigate",
+        "sec-fetch-site": "none",
+        "sec-fetch-user": "?1",
+        "upgrade-insecure-requests": "1",
+        "viewport-width": "1366",
+    },
+        "referrerPolicy": "strict-origin-when-cross-origin",
+        "body": null,
+        "method": "GET"
+    });*/
+
     suspend fun page(
         url: String,
         onError: (status: Int) -> Unit,
@@ -66,9 +106,11 @@ class Api {
     ) {
         val response: HttpResponse = client.get(url) {
             headers {
-                append("accept", "text/html")
-                append("cookie", cookies!!)
+                append(
+                    "accept", "text/html,application/xhtml+xml,application/xml"
+                )
             }
+            injectCookies()
         }
         if (response.status == HttpStatusCode.OK)
             onSuccess(response.bodyAsText())
@@ -77,6 +119,7 @@ class Api {
     }
 
     companion object {
+        const val IG_DOMAIN = "https://www.instagram.com/"
         const val POST_HASH = "8c2a529969ee035a5063f2fc8602a0fd"
 
         /** Converts a seconds timestamp to a milliseconds one. */
@@ -147,5 +190,19 @@ class Api {
         SIGN_OUT("https://www.instagram.com/accounts/logout/ajax/"),// MEDIA_ITEM
 
         RAW_QUERY("https://www.instagram.com/graphql/query"),
+    }
+
+    public class CustomCookiesStorage : CookiesStorage {
+        override suspend fun get(requestUrl: Url): List<Cookie> {
+            TODO("Not yet implemented")
+        }
+
+        override suspend fun addCookie(requestUrl: Url, cookie: Cookie) {
+
+        }
+
+        override fun close() {
+
+        }
     }
 }
