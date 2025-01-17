@@ -3,8 +3,8 @@ package ir.mahdiparastesh.instatools.api
 @Suppress(
     "SpellCheckingInspection", "MemberVisibilityCanBePrivate", "PropertyName", "unused"
 )
-open class Rest {
-    lateinit var status: String
+interface Rest {
+    val status: String
 
     interface User {
         val pk: String
@@ -13,6 +13,15 @@ open class Rest {
         val profile_pic_url: String
         val is_verified: Boolean
     }
+
+    data class MediaInfo(
+        val num_results: Float,
+        val more_available: Boolean,
+        val items: List<Media>,
+        //var auto_load_more_enabled: Boolean,
+        override val status: String
+    ) : Rest
+
 
     class UserOld(
         //val primary_profile_link_type: Double,
@@ -66,9 +75,13 @@ open class Rest {
         //val more_groups_available: Boolean,
         //val has_more: Boolean, always returns false incorrectly!
         //val should_limit_list_of_followers: Boolean,
-    ) : Rest()
+        override val status: String
+    ) : Rest
 
-    class Friendships(val friendship_statuses: Map<String, FriendshipStatus>) : Rest()
+    class Friendships(
+        val friendship_statuses: Map<String, FriendshipStatus>,
+        override val status: String
+    ) : Rest
 
     class FriendshipStatus(
         //val blocking: Boolean?, // only in mute/unmute and show(one)
@@ -91,7 +104,10 @@ open class Rest {
         //val subscribed: Boolean?, // only in mute/unmute and show(one)
     )
 
-    class UserInfo(val user: UserOld) : Rest()
+    class UserInfo(
+        val user: UserOld,
+        override val status: String
+    ) : Rest
 
     /*class InboxPage(
         //val has_pending_top_requests: Boolean,
@@ -103,7 +119,7 @@ open class Rest {
 
     //class InboxThread(val thread: Dm.DmThread) : Rest()
 
-    open class DynamicReelsList : Rest() {
+    interface DynamicReelsList : Rest {
         //var broadcast: Array<Any?>? = null
     }
 
@@ -172,11 +188,15 @@ open class Rest {
         //val rank_token: String,
         //val has_more: Boolean,
         val users: Array<ItemUser>,
-    ) : Rest()
+        override val status: String
+    ) : Rest
 
     class ItemUser(val position: Float, val user: UserOld)
 
-    class Signing/*(val login_nonce: String?)*/ : Rest()
+    class Signing(
+        //val login_nonce: String?
+        override val status: String
+    ) : Rest
 
     class DoFollow(
         //val feedback_title: String?, // e.g.: "Try again later"
@@ -188,7 +208,8 @@ open class Rest {
         //val previous_following: Boolean?,
         //val result: String?,
         val spam: Boolean?,
-    ) : Rest()
+        override val status: String
+    ) : Rest
 
     class Seen(val status_code: String /* must be "200" */)
 
@@ -197,5 +218,6 @@ open class Rest {
         //val checkpoint_url: String, // e.g.: "https://www.instagram.com/challenge/?next=<THE_API_ENDPOINT>"
         val lock: Boolean,
         //val flow_render_type: Float, // e.g.: 0
-    ) : Rest() // was "fail"
+        override val status: String // was "fail"
+    ) : Rest
 }

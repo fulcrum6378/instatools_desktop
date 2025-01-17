@@ -8,7 +8,9 @@ object RelayPrefetchedStreamCache {
     private val gsonType = object : TypeToken<Map<String, List<List<Any>>>>() {}.type
 
     @Suppress("UNCHECKED_CAST")
-    fun crawl(html: String): HashMap<String, Map<String, Any>> {
+    fun crawl(
+        html: String, predicate: (json: String) -> Boolean
+    ): HashMap<String, Map<String, Any>> {
         var read = html
         var json: String
         var gson: Map<String, List<List<Any>>>
@@ -17,7 +19,7 @@ object RelayPrefetchedStreamCache {
         while (read.contains(HTML_TAG_SCRIPT_JSON)) {
             read = read.substringAfter(HTML_TAG_SCRIPT_JSON).substringAfter(">")
             json = read.substringBefore("</script>")
-            if (json.contains("RelayPrefetchedStreamCache")) {
+            if (json.contains("RelayPrefetchedStreamCache") && predicate(json)) {
                 gson = (GsonBuilder().setLenient().create().fromJson(json, gsonType))
                 gson = (gson["require"]!![0][3] as List<Map<String, Any?>>)[0]["__bbox"]!!
                         as Map<String, List<List<Any>>>

@@ -4,7 +4,6 @@ import com.google.gson.Gson
 import io.ktor.client.*
 import io.ktor.client.engine.*
 import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
 import io.ktor.client.plugins.cookies.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -15,29 +14,20 @@ import kotlin.reflect.KClass
 
 class Api {
     val client = HttpClient(CIO) {
-        install(HttpCookies)
+        install(HttpCookies) {
+            storage = CustomCookiesStorage()
+        }
         engine {
             proxy = ProxyBuilder.http("http://127.0.0.1:8580/")
         }
     }
-    private var cookies: String? = null  // FIXME SAVE COOKIES ON DESTROY
-    private var cookiesInjectedOnce = false
+    private var cookies: String? = null
 
     fun loadCookies(path: String = "cookies.txt"): Boolean {
         val f = File(path)
         if (!f.exists()) return false
         cookies = FileInputStream(f).use { String(it.readBytes()) }
         return true
-    }
-
-    private fun HttpMessageBuilder.injectCookies() {
-        //if (cookiesInjectedOnce) return
-        var kv: List<String>
-        for (cookie in cookies!!.split("; ")) {
-            kv = cookie.split("=")
-            cookie(kv[0], kv[1], domain = IG_DOMAIN)
-        }
-        cookiesInjectedOnce = true
     }
 
     @Suppress("SpellCheckingInspection", "UastIncorrectHttpHeaderInspection")
@@ -61,7 +51,6 @@ class Api {
                 )
                 append("x-ig-app-id", "936619743392459")
             }
-            injectCookies()
             if (body != null) setBody(body)
         }
         val text = response.bodyAsText()
@@ -74,31 +63,6 @@ class Api {
         }
     }
 
-    /*fetch("https://www.instagram.com/lucy.ai23/",
-    {
-        "headers": {
-        "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,es-US;q=0.6,es;q=0.5,ru-RU;q=0.4,ru;q=0.3,de-DE;q=0.2,de;q=0.1,cs-CZ;q=0.1,cs;q=0.1,en-US;q=0.1",
-        "dpr": "1",
-        "priority": "u=0, i",
-        "sec-ch-prefers-color-scheme": "light",
-        "sec-ch-ua": "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
-        "sec-ch-ua-full-version-list": "\"Google Chrome\";v=\"131.0.6778.140\", \"Chromium\";v=\"131.0.6778.140\", \"Not_A Brand\";v=\"24.0.0.0\"",
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-model": "\"\"",
-        "sec-ch-ua-platform": "\"Windows\"",
-        "sec-ch-ua-platform-version": "\"10.0.0\"",
-        "sec-fetch-dest": "document",
-        "sec-fetch-mode": "navigate",
-        "sec-fetch-site": "none",
-        "sec-fetch-user": "?1",
-        "upgrade-insecure-requests": "1",
-        "viewport-width": "1366",
-    },
-        "referrerPolicy": "strict-origin-when-cross-origin",
-        "body": null,
-        "method": "GET"
-    });*/
-
     suspend fun page(
         url: String,
         onError: (status: Int) -> Unit,
@@ -106,11 +70,8 @@ class Api {
     ) {
         val response: HttpResponse = client.get(url) {
             headers {
-                append(
-                    "accept", "text/html,application/xhtml+xml,application/xml"
-                )
+                append("accept", "text/html,application/xhtml+xml,application/xml")
             }
-            injectCookies()
         }
         if (response.status == HttpStatusCode.OK)
             onSuccess(response.bodyAsText())
@@ -137,7 +98,7 @@ class Api {
         ), // &rank_token=0.9366187585704904
 
         // Posts & Stories
-        MEDIA_ITEM("https://www.instagram.com/api/v1/media/%s/info/"),
+        MEDIA_INFO("https://www.instagram.com/api/v1/media/%s/info/"),
         POSTS(
             "https://www.instagram.com/graphql/query/?query_hash=$POST_HASH" +
                     "&variables={\"id\":\"%1\$s\",\"first\":12,\"after\":\"%2\$s\"}"
@@ -192,17 +153,25 @@ class Api {
         RAW_QUERY("https://www.instagram.com/graphql/query"),
     }
 
-    public class CustomCookiesStorage : CookiesStorage {
+    inner class CustomCookiesStorage : CookiesStorage {
         override suspend fun get(requestUrl: Url): List<Cookie> {
-            TODO("Not yet implemented")
+            val ret = arrayListOf<Cookie>()
+            var kv: List<String>
+            for (cookie in cookies!!.split("; ")) {
+                kv = cookie.split("=")
+                ret.add(Cookie(kv[0], kv[1], domain = IG_DOMAIN))
+            }
+            return ret
         }
 
+        @Suppress("SpellCheckingInspection")
         override suspend fun addCookie(requestUrl: Url, cookie: Cookie) {
-
+            if (cookie.name == "sessionid" && cookie.value == "deleted") return
+            // TODO
         }
 
         override fun close() {
-
+            // FIXME SAVE COOKIES ON DESTROY
         }
     }
 }

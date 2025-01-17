@@ -9,61 +9,69 @@ import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.Api.Companion.xFromSeconds
 import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.api.RelayPrefetchedStreamCache
+import ir.mahdiparastesh.instatools.api.Rest
 import java.io.File
 
 class Downloader(private val api: Api) {
     private val queue = arrayListOf<Queued>()
 
     suspend fun handleLink(link: String) {
-        api.page(link, { status ->
+        if ("/p/" in link || "/reel/" in link) api.page(link, { status ->
             when (status) {
                 429 -> throw IllegalStateException("Too man requests!")
-                404 -> throw IllegalStateException("Error 404!")
                 else -> throw IllegalStateException("Error $status!")
             }
         }) { html ->
             //println(html)
+            val data = RelayPrefetchedStreamCache.crawl(html) {
+                it.contains("PolarisPostRootQueryRelayPreloader")
+            }
+            //println("Found: " + data.keys.joinToString(", "))
             //return@page
-            val data = RelayPrefetchedStreamCache.crawl(html)
-            println("Found: " + data.keys.joinToString(", "))
 
-            // Post, Reel, TV TODO TV?!
             if ("PolarisPostRootQueryRelayPreloader" in data) {
                 @Suppress("UNCHECKED_CAST")
                 val medMap = (data["PolarisPostRootQueryRelayPreloader"]!!["items"] as List<Map<String, Any>>)[0]
                 val med = Gson().fromJson(Gson().toJson(medMap), Media.Post::class.java)
-
-                when {
-                    med.carousel_media != null -> for (car in med.carousel_media) queue.add(
-                        Queued(
-                            link,
-                            med.taken_at.xFromSeconds(),
-                            med.user.pk,
-                            med.user.username,
-                            car.pk,
-                            car.nearest(Media.BEST),
-                            car.thumb(),
-                            car.media_type.toInt().toByte(),
-                            med.caption.text
-                        )
+                if (med.carousel_media != null) for (car in med.carousel_media) queue.add(
+                    Queued(
+                        link,
+                        med.taken_at.xFromSeconds(),
+                        med.user.pk,
+                        med.user.username,
+                        car.pk,
+                        car.nearest(Media.BEST),
+                        car.thumb(),
+                        car.media_type.toInt().toByte(),
+                        med.caption.text
                     )
-
-                    else -> queue.add(
-                        Queued(
-                            link,
-                            med.taken_at.xFromSeconds(),
-                            med.user.pk,
-                            med.user.username,
-                            med.pk,
-                            med.nearest(Media.BEST),
-                            med.thumb(),
-                            med.media_type.toInt().toByte(),
-                            med.caption.text
-                        )
+                ) else queue.add(
+                    Queued(
+                        link,
+                        med.taken_at.xFromSeconds(),
+                        med.user.pk,
+                        med.user.username,
+                        med.pk,
+                        med.nearest(Media.BEST),
+                        med.thumb(),
+                        med.media_type.toInt().toByte(),
+                        med.caption.text
                     )
-                }
+                )
                 download()
-            }
+            } else if ("instagram://media?id=" in html) {
+                val medId = html.substringAfter("instagram://media?id=").substringBefore("\"")
+                api.call<Rest.MediaInfo>(
+                    Api.Endpoint.MEDIA_INFO.url.format(medId), Rest.MediaInfo::class,
+                    onError = { status, body ->
+                    }
+                ) { mediaInfo ->
+                    mediaInfo.items.first()  // TODO ...
+
+                    download()
+                }
+            } else
+                throw IllegalStateException("Shall we re-implement PageConfig?")
 
             /*val root = ((cnfWrapper.require.keys
                 .find { it.startsWith("CometPlatformRootClient") }
@@ -141,6 +149,9 @@ class Downloader(private val api: Api) {
                     ) throw IllegalStateException("Unknown response ${root.rootView.resource.__dr}")
                 }
             }*/
+        } else {
+            // TODO STORY, HIGHLIGHTS, TV
+            //download()
         }
     }
 
