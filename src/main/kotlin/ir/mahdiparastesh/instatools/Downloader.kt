@@ -24,55 +24,26 @@ class Downloader(private val api: Api) {
             }
         }) { html ->
             //println(html)
-            val data = hashMapOf<String, Map<String, Any>>()/*RelayPrefetchedStreamCache.crawl(html) {
+            val data = RelayPrefetchedStreamCache.crawl(html) { // hashMapOf<String, Map<String, Any>>()
                 it.contains("PolarisPostRootQueryRelayPreloader")
-            }*/
+            }
             //println("Found: " + data.keys.joinToString(", "))
             //return@page
 
             if ("PolarisPostRootQueryRelayPreloader" in data) {
                 @Suppress("UNCHECKED_CAST")
                 val medMap = (data["PolarisPostRootQueryRelayPreloader"]!!["items"] as List<Map<String, Any>>)[0]
-                val med = Gson().fromJson(Gson().toJson(medMap), Media.Post::class.java)
-                if (med.carousel_media != null) for (car in med.carousel_media) queue.add(
-                    Queued(
-                        link,
-                        med.taken_at.xFromSeconds(),
-                        med.user.pk,
-                        med.user.username,
-                        car.pk,
-                        car.nearest(Media.BEST),
-                        car.thumb(),
-                        car.media_type.toInt().toByte(),
-                        med.caption.text
-                    )
-                ) else queue.add(
-                    Queued(
-                        link,
-                        med.taken_at.xFromSeconds(),
-                        med.user.pk,
-                        med.user.username,
-                        med.pk,
-                        med.nearest(Media.BEST),
-                        med.thumb(),
-                        med.media_type.toInt().toByte(),
-                        med.caption.text
-                    )
-                )
-                download()
+                enqueue(link, Gson().fromJson(Gson().toJson(medMap), Media::class.java))
             } else if ("instagram://media?id=" in html) {
                 val medId = html.substringAfter("instagram://media?id=").substringBefore("\"")
                 println("Media ID: $medId")
                 api.call<Rest.LazyList<Media>>(
                     Api.Endpoint.MEDIA_INFO.url.format(medId), Rest.LazyList::class,
                     typeToken = object : TypeToken<Rest.LazyList<Media>>() {}.type,
-                    onError = { status, body ->
+                    onError = { status, _ ->
+                        throw IllegalStateException("Error $status!")
                     }
-                ) { list ->
-                    list.items.first()  // TODO ...
-
-                    download()
-                }
+                ) { singleItemList -> enqueue(link, singleItemList.items.first()) }
             } else
                 throw IllegalStateException("Shall we re-implement PageConfig?")
 
@@ -154,8 +125,37 @@ class Downloader(private val api: Api) {
             }*/
         } else {
             // TODO STORY, HIGHLIGHTS, TV
-            //download()
+            //enqueue(link, )
         }
+    }
+
+    private suspend fun enqueue(link: String, med: Media) {
+        if (med.carousel_media != null) for (car in med.carousel_media!!) queue.add(
+            Queued(
+                link,
+                med.taken_at.xFromSeconds(),
+                med.user!!.pk,
+                med.user!!.username,
+                car.pk,
+                car.nearest(Media.BEST),
+                car.thumb(),
+                car.media_type.toInt().toByte(),
+                med.caption!!.text
+            )
+        ) else queue.add(
+            Queued(
+                link,
+                med.taken_at.xFromSeconds(),
+                med.user!!.pk,
+                med.user!!.username,
+                med.pk,
+                med.nearest(Media.BEST),
+                med.thumb(),
+                med.media_type.toInt().toByte(),
+                med.caption!!.text
+            )
+        )
+        download()
     }
 
     private suspend fun download() {

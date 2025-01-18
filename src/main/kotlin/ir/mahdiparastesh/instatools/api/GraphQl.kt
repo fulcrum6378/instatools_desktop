@@ -1,7 +1,5 @@
 package ir.mahdiparastesh.instatools.api
 
-import java.util.concurrent.CopyOnWriteArrayList
-
 @Suppress("SpellCheckingInspection", "MemberVisibilityCanBePrivate", "PropertyName")
 class GraphQl(
     val data: GraphQlData?,
@@ -111,7 +109,7 @@ class GraphQl(
     class EdgeList(
         var page_info: PageInfo,
         var count: Double,
-        var edges: CopyOnWriteArrayList<EdgePost>
+        var edges: List<EdgePost>
     )
 
     class PageInfo(/*val has_next_page: Boolean, */val end_cursor: String)
