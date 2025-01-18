@@ -130,12 +130,12 @@ class Downloader(private val api: Api) {
     }
 
     private suspend fun enqueue(link: String, med: Media) {
-        if (med.carousel_media != null) for (car in med.carousel_media!!) queue.add(
+        if (med.carousel_media != null) for (car in med.carousel_media) queue.add(
             Queued(
                 link,
                 med.taken_at.xFromSeconds(),
                 med.user!!.pk,
-                med.user!!.username,
+                med.user.username,
                 car.pk,
                 car.nearest(Media.BEST),
                 car.thumb(),
@@ -147,7 +147,7 @@ class Downloader(private val api: Api) {
                 link,
                 med.taken_at.xFromSeconds(),
                 med.user!!.pk,
-                med.user!!.username,
+                med.user.username,
                 med.pk,
                 med.nearest(Media.BEST),
                 med.thumb(),

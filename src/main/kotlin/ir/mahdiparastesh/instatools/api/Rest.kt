@@ -1,35 +1,38 @@
 package ir.mahdiparastesh.instatools.api
 
-@Suppress(
-    "SpellCheckingInspection", "MemberVisibilityCanBePrivate", "PropertyName"
-)
+@Suppress("SpellCheckingInspection", "MemberVisibilityCanBePrivate", "PropertyName")
 interface Rest {
     val status: String
 
-    interface User {
-        val friendship_status: Map<String, Any?>?
-        val full_name: String?
-        val id: String
-        val is_private: Boolean?
-        val is_unpublished: Boolean?
-        val pk: String
-        val profile_pic_url: String
-        val username: String
-
+    data class User(
+        val friendship_status: Map<String, Any?>?,
+        val full_name: String?,
+        val id: String,
+        val is_private: Boolean?,
+        val is_unpublished: Boolean?,
+        val pk: String,
+        val profile_pic_url: String,
+        val username: String,
+    ) {
         fun visName() = full_name?.ifBlank { username } ?: username
     }
 
-    interface LazyList<N> : Rest {
-        val num_results: Float
-        val more_available: Boolean
-        val items: List<N>
-        val auto_load_more_enabled: Boolean
+    data class LazyList<N>(
+        val num_results: Float,
+        val more_available: Boolean,
+        val items: List<N>,
+        val auto_load_more_enabled: Boolean,
+        override val status: String,
+    ) : Rest
+
+    data class UserInfo(
+        val user: User,
         override val status: String
-    }
+    ) : Rest
 
     /** Both following and followers receive this API. */
-    class Follow(
-        val users: Array<User>? = null,
+    data class Follow(
+        val users: List<User>? = null,
         /* true for @fulcrum6378 which needs multiple fetches,
          * false for @instatools.apk which requires a single one. */
         //val big_list: Boolean,
@@ -46,12 +49,12 @@ interface Rest {
         override val status: String
     ) : Rest
 
-    class Friendships(
+    data class Friendships(
         val friendship_statuses: Map<String, FriendshipStatus>,
         override val status: String
     ) : Rest
 
-    class FriendshipStatus(
+    data class FriendshipStatus(
         //val blocking: Boolean?, // only in mute/unmute and show(one)
         //val followed_by: Boolean?, // only in mute/unmute and show(one)
         //val following: Boolean,
@@ -72,12 +75,7 @@ interface Rest {
         //val subscribed: Boolean?, // only in mute/unmute and show(one)
     )
 
-    class UserInfo(
-        val user: User,
-        override val status: String
-    ) : Rest
-
-    /*class InboxPage(
+    /*data class InboxPage(
         //val has_pending_top_requests: Boolean,
         val inbox: Dm.Inbox,
         //val pending_requests_total: Double,
@@ -85,24 +83,24 @@ interface Rest {
         //val viewer: User,
     ) : Rest()*/
 
-    //class InboxThread(val thread: Dm.DmThread) : Rest()
+    //data class InboxThread(val thread: Dm.DmThread) : Rest()
 
     interface DynamicReelsList : Rest {
         //var broadcast: Array<Any?>? = null
     }
 
-    //class Story(val reel: StoryReel?) : DynamicReelsList()
+    //data class Story(val reel: StoryReel?) : DynamicReelsList()
 
     /*interface TrayWrapper<T> where T : Reel {
         val tray: Array<T>
     }*/
 
-    /*class Highlights(
+    /*data class Highlights(
         override val tray: Array<HighlightReel>,
         //val show_empty_state: Boolean,
     ) : Rest(), TrayWrapper<HighlightReel>*/
 
-    /*class Reels<R>(
+    /*data class Reels<R>(
         val reels: Map<String, R>,
         //val reels_media: Array<R>,
     ) : Rest() where R : Reel*/
@@ -120,7 +118,7 @@ interface Rest {
         val user: User
     )*/
 
-    /*class StoryReel(
+    /*data class StoryReel(
         //val expiring_at: Double,
         //val has_besties_media: Boolean?,
         //val has_fan_club_media: Boolean?,
@@ -132,7 +130,7 @@ interface Rest {
         user: User
     ) : Reel(items, user)*/
 
-    /*class HighlightReel(
+    /*data class HighlightReel(
         val cover_media: HighlightCover?, // uncertain "?"
         //val created_at: Double,
         val id: String, // starts with "highlight:"
@@ -148,25 +146,25 @@ interface Rest {
         user: User
     ) : Reel(items, user)*/
 
-    //class HighlightCover(val cropped_image_version: MediaOld.Candidate/*, val crop_rect: Any?*/)
+    //data class HighlightCover(val cropped_image_version: MediaOld.Candidate/*, val crop_rect: Any?*/)
 
-    class Search(
+    data class Search(
         //val places: Array<HashMap<String, *>>,
         //val hashtags: Array<HashMap<String, *>>,
         //val rank_token: String,
         //val has_more: Boolean,
-        val users: Array<ItemUser>,
+        val users: List<ItemUser>,
         override val status: String
     ) : Rest
 
-    class ItemUser(val position: Float, val user: User)
+    data class ItemUser(val position: Float, val user: User)
 
-    class Signing(
+    data class Signing(
         //val login_nonce: String?
         override val status: String
     ) : Rest
 
-    class DoFollow(
+    data class DoFollow(
         //val feedback_title: String?, // e.g.: "Try again later"
         //val feedback_message: String?, // e.g.: "We restrict certain activity to protect our community."
         //val feedback_url: String?,
@@ -179,9 +177,9 @@ interface Rest {
         override val status: String
     ) : Rest
 
-    class Seen(val status_code: String /* must be "200" */)
+    data class Seen(val status_code: String /* must be "200" */)
 
-    class ApiFailure(
+    data class ApiFailure(
         //val message: String, // e.g.: "checkpoint_required"
         //val checkpoint_url: String, // e.g.: "https://www.instagram.com/challenge/?next=<THE_API_ENDPOINT>"
         val lock: Boolean,

@@ -1,13 +1,16 @@
 package ir.mahdiparastesh.instatools
 
+import com.google.gson.reflect.TypeToken
 import ir.mahdiparastesh.instatools.api.Api
+import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.api.Rest
 
 suspend fun main() {
     val api = Api()
-    api.call<Rest.UserInfo>(
-        Api.Endpoint.INFO.url.format("8337021434"), Rest.UserInfo::class
+    api.call<Rest.LazyList<Media>>(
+        Api.Endpoint.MEDIA_INFO.url.format("3545298805687592771"), Rest.LazyList::class,
+        typeToken = object : TypeToken<Rest.LazyList<Media>>() {}.type,
     ) { info ->
-        println(info.user.username)
+        println(info.items[0].nearest(Media.BEST))
     }
 }

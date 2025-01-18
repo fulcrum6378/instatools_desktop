@@ -3,46 +3,46 @@ package ir.mahdiparastesh.instatools.api
 import kotlin.math.abs
 
 @Suppress("PropertyName")
-interface Media {
-    val can_reply: Boolean?
-    val caption: Caption?
-    val carousel_media: List<Media>?
-    val carousel_media_count: Float?
-    val carousel_media_ids: List<String>?
-    val coauthor_producers: List<Rest.User>?
-    val code: String?
-    val comment_count: Float?
-    val device_timestamp: Double?
-    val has_audio: Boolean?
-    val id: String
-    val invited_coauthor_producers: List<Rest.User>?
-    val image_versions2: ImageVersions2
-    val like_count: Double?
-    val location: Map<String, Any?>?
-    val media_type: Float
-    val number_of_qualities: Float?
-    val organic_tracking_token: String?
-    val original_height: Float
-    val original_width: Float
-    val owner: Rest.User?
-    val photo_of_you: Boolean?
-    val pk: String
-    val product_type: String?
-    val taken_at: Double
-    val user: Rest.User?
-    val video_dash_manifest: String?
-    val video_versions: List<Version>?
-    val view_count: Double?
-
+data class Media(
+    val can_reply: Boolean?,
+    val caption: Caption?,
+    val carousel_media: List<Media>?,
+    val carousel_media_count: Float?,
+    val carousel_media_ids: List<String>?,
+    val coauthor_producers: List<Rest.User>?,
+    val code: String?,
+    val comment_count: Float?,
+    val device_timestamp: Double?,
+    val has_audio: Boolean?,
+    val id: String,
+    val invited_coauthor_producers: List<Rest.User>?,
+    val image_versions2: ImageVersions2,
+    val like_count: Double?,
+    val location: Map<String, Any?>?,
+    val media_type: Float,
+    val number_of_qualities: Float?,
+    val organic_tracking_token: String?,
+    val original_height: Float,
+    val original_width: Float,
+    val owner: Rest.User?,
+    val photo_of_you: Boolean?,
+    val pk: String,
+    val product_type: String?,
+    val taken_at: Double,
+    val user: Rest.User?,
+    val video_dash_manifest: String?,
+    val video_versions: List<Version>?,
+    val view_count: Double?,
+) {
     data class ImageVersions2(
         val candidates: List<Version>
     )
 
-    interface Version {
-        val url: String
-        val height: Float
-        val width: Float
-    }
+    data class Version(
+        val url: String,
+        val height: Float,
+        val width: Float,
+    )
 
     data class Caption(
         val created_at: Double,
@@ -64,7 +64,7 @@ interface Media {
     fun nearest(ideal: Float = BEST, justImage: Boolean = false): String? {
         var ret: String? = null
         if (!justImage && video_versions != null)
-            ret = funChooser(video_versions as List<Version>, ideal)
+            ret = funChooser(video_versions, ideal)
         if (ret == null)
             ret = funChooser(image_versions2.candidates, ideal)
         return ret
@@ -129,15 +129,14 @@ interface Media {
     }
 
     fun thumb() = //(this as Media).thumbnails?.sprite_urls?.getOrNull(0)
-        (if (carousel_media != null) carousel_media?.getOrNull(0)?.nearest(WORST, true) else null)
-            ?: nearest(WORST, true)
+        carousel_media?.getOrNull(0)?.nearest(WORST, true) ?: nearest(WORST, true)
 
     fun hasAudio() =
-        has_audio == true || (carousel_media != null && carousel_media?.any { it.media_type == 2f } == true)
+        has_audio == true || (carousel_media != null && carousel_media.any { it.media_type == 2f })
 
     fun audioUrl(): String? {
         if (video_dash_manifest == null) return null
-        return video_dash_manifest!!
+        return video_dash_manifest
             .substringAfter("<AudioChannelConfiguration")
             .substringAfter("<BaseURL")
             .substringAfter(">")
