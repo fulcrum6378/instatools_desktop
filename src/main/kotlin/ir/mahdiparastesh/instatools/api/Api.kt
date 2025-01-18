@@ -15,6 +15,7 @@ import kotlin.reflect.KClass
 
 class Api {
     val client = HttpClient(CIO) {
+        followRedirects = false
         /*install(HttpCookies) {
             storage = CustomCookiesStorage()
         }*/
@@ -23,13 +24,15 @@ class Api {
         }
     }
     private var fCookies: File? = null
+    private var rCookies: String? = null
     private var cookies = hashMapOf<String, String>()
 
     fun loadCookies(path: String = "cookies.txt"): Boolean {
         fCookies = File(path)
         if (!fCookies!!.exists()) return false
         var kv: List<String>
-        FileInputStream(fCookies!!).use { String(it.readBytes()) }.split("; ").forEach {
+        rCookies = FileInputStream(fCookies!!).use { String(it.readBytes()) }
+        rCookies!!.trim().split("; ").forEach {
             kv = it.split("=")
             if (kv.size != 2) return@forEach
             cookies[kv[0]] = kv[1]
@@ -50,30 +53,15 @@ class Api {
         val response: HttpResponse = client.request(url) {
             method = httpMethod
             headers {
-                //append("accept", "*/*")
-                /*append("accept-language", "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,es-US;q=0.6,es;q=0.5,ru-RU;q=0.4,ru;q=0.3,de-DE;q=0.2,de;q=0.1,cs-CZ;q=0.1,cs;q=0.1,en-US;q=0.1")
-                append("sec-ch-prefers-color-scheme", "light")
-                append("sec-ch-ua", "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"")
-                append("sec-ch-ua-full-version-list", "\"Google Chrome\";v=\"131.0.6778.140\", \"Chromium\";v=\"131.0.6778.140\", \"Not_A Brand\";v=\"24.0.0.0\"")
-                append("sec-ch-ua-mobile", "?0")
-                append("sec-ch-ua-model", "\"\"")
-                append("sec-ch-ua-platform", "\"Windows\"")
-                append("sec-fetch-dest", "empty")
-                append("sec-fetch-mode", "cors")
-                append("sec-fetch-site", "same-origin")*/
                 append("x-asbd-id", "129477")
                 if (COOKIE_CSRF_TOKEN in cookies)
                     append("x-csrftoken", cookies[COOKIE_CSRF_TOKEN]!!)
                 append("x-ig-app-id", "936619743392459")
-                /*append("x-ig-www-claim", "0")
-                append("x-requested-with", "XMLHttpRequest")
-                append("x-web-session-id", "8yez8t:v0b03t:60m5bn")*/
-                append("cookie", "ps_l=1; ps_n=1; mid=Zwkt3wALAAGiYlxgtUWozgf2unFE; datr=3i0JZ0Yom4G5r0sOVfvL8lFl; ig_did=42D71865-09BA-4449-8A17-7E98FF37A876; fbm_124024574287414=base_domain=.instagram.com; fbsr_124024574287414=IGPINZKyJzrNtoGUVjzM_c_CVvzrQz8-K93bBkGCWH8.eyJ1c2VyX2lkIjoiMTAwMDA4MDA0ODE0NzI1IiwiY29kZSI6IkFRQlNKRkQ5REE1WXpDNGoxYjVqQWFQeXdMd1JFTnFJUXdZNUduTG1qV2U5YzdPYUhWXzBmUEFVc1g4Y3FVSTZFZ0wwWTlWVEt3OVVTZmlyN1NKbFNkMWdUUXZfLTV0YzNhdjR3ZW15SWFfNnl2ZXZpb00tY1hZSTIyOUtzTFlXc3k0RUpYWDhtUnY0VEVNbjhRRFJYNURXdlMzLWlQelFFcG9xajVweUtFU3dPdnhib3VLWVdIMkhDajllNmtsWk1NSmFydUlzUDlLRGE0cHNEdGdZVlhvZl81QXRwYnZuVWNlTWtYa0ZySzhTaUdKY2FUZnYxQWtwUDFhN2tISHZ5MTN1SUJKMjc3NE9yQ0stU1lLa1k5ckc3SzFid3hxUEJnVEw0V0kzQ2hhbVZOSnhscUNPcVpORW40UVNrT185QzB6NE5VMmhNQUZ3T0NHVFBFaDZ0TjV4Iiwib2F1dGhfdG9rZW4iOiJFQUFCd3pMaXhuallCTzdxSGFMb1VoWDhLWkJmcHNKQ1RxbHBPSzhBUnFrZVRqWkF0VlpBbktXamREcmlWOUFTd1I4b1N3NHUzYlpBUHFzZUNySzRYYTd4enE1dlNFTzNBRWJaQW5MTmtFMmFWMENLeEx6bUZoSTM5WkFTZ1NxVG5tcGtlY3BPV2pHbDBoQkpUeHRlRVpCcmNPem5LMVd5dlJaQUpGOWI5bmNuYUtSbkJvNVdzVFpBdWZGMENzdXBiSkZGY250Z255MFpBdnZ2WkJsTmU3ZFpCb3BrWkQiLCJhbGdvcml0aG0iOiJITUFDLVNIQTI1NiIsImlzc3VlZF9hdCI6MTczMjIwODc3OX0; csrftoken=9CZmZa1yWdODfz7L08cnaJerQJoH6UX2; ds_user_id=8337021434; ig_direct_region_hint=\"FRC\\0548337021434\\0541768598626:01f7bf573fba19360c60be85233440f5d13483b6da6018fed9b2addf37eaf33e8d9263ea\"; sessionid=8337021434%3A16QWbheL5V0m9T%3A22%3AAYe3xnwQDWirm5AfHj8vTrTz3dQZN-g4Kp9vZpqTRBo; wd=1366x389; rur=\"NHA\\0548337021434\\0541768726176:01f77e572643858ef666e1dd0b3487ace9fcd4b9f3a465a71e73e2c396a88b77dc8eb84a\"")
-                /*append("Referer", "https://www.instagram.com/lucy.ai23/p/DEzbnrfoCdD/")
-                append("Referrer-Policy", "strict-origin-when-cross-origin")*/
+                if (rCookies != null) append("cookie", rCookies!!)
             }
             if (body != null) setBody(body)
         }
+        println(response.headers.getAll("Set-Cookie")?.joinToString("; ") { it.split("; ")[0] })
         val text = response.bodyAsText()
         if (System.getenv("test") == "1")
             println(text)
@@ -84,35 +72,6 @@ class Api {
         }
     }
 
-    /*fetch("https://www.instagram.com/api/v1/media/3545298805687592771/info/", {
-        "headers": {
-            "accept": "*//*",
-            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,es-US;q=0.6,es;q=0.5,ru-RU;q=0.4,ru;q=0.3,de-DE;q=0.2,de;q=0.1,cs-CZ;q=0.1,cs;q=0.1,en-US;q=0.1",
-            "priority": "u=1, i",
-            "sec-ch-prefers-color-scheme": "light",
-            "sec-ch-ua": "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
-            "sec-ch-ua-full-version-list": "\"Google Chrome\";v=\"131.0.6778.140\", \"Chromium\";v=\"131.0.6778.140\", \"Not_A Brand\";v=\"24.0.0.0\"",
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-model": "\"\"",
-            "sec-ch-ua-platform": "\"Windows\"",
-            "sec-ch-ua-platform-version": "\"10.0.0\"",
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "same-origin",
-            "x-asbd-id": "129477",
-            "x-csrftoken": "9CZmZa1yWdODfz7L08cnaJerQJoH6UX2",
-            "x-ig-app-id": "936619743392459",
-            "x-ig-www-claim": "0",
-            "x-requested-with": "XMLHttpRequest",
-            "x-web-session-id": "8yez8t:v0b03t:60m5bn",
-            "cookie": "ps_l=1; ps_n=1; mid=Zwkt3wALAAGiYlxgtUWozgf2unFE; datr=3i0JZ0Yom4G5r0sOVfvL8lFl; ig_did=42D71865-09BA-4449-8A17-7E98FF37A876; fbm_124024574287414=base_domain=.instagram.com; fbsr_124024574287414=IGPINZKyJzrNtoGUVjzM_c_CVvzrQz8-K93bBkGCWH8.eyJ1c2VyX2lkIjoiMTAwMDA4MDA0ODE0NzI1IiwiY29kZSI6IkFRQlNKRkQ5REE1WXpDNGoxYjVqQWFQeXdMd1JFTnFJUXdZNUduTG1qV2U5YzdPYUhWXzBmUEFVc1g4Y3FVSTZFZ0wwWTlWVEt3OVVTZmlyN1NKbFNkMWdUUXZfLTV0YzNhdjR3ZW15SWFfNnl2ZXZpb00tY1hZSTIyOUtzTFlXc3k0RUpYWDhtUnY0VEVNbjhRRFJYNURXdlMzLWlQelFFcG9xajVweUtFU3dPdnhib3VLWVdIMkhDajllNmtsWk1NSmFydUlzUDlLRGE0cHNEdGdZVlhvZl81QXRwYnZuVWNlTWtYa0ZySzhTaUdKY2FUZnYxQWtwUDFhN2tISHZ5MTN1SUJKMjc3NE9yQ0stU1lLa1k5ckc3SzFid3hxUEJnVEw0V0kzQ2hhbVZOSnhscUNPcVpORW40UVNrT185QzB6NE5VMmhNQUZ3T0NHVFBFaDZ0TjV4Iiwib2F1dGhfdG9rZW4iOiJFQUFCd3pMaXhuallCTzdxSGFMb1VoWDhLWkJmcHNKQ1RxbHBPSzhBUnFrZVRqWkF0VlpBbktXamREcmlWOUFTd1I4b1N3NHUzYlpBUHFzZUNySzRYYTd4enE1dlNFTzNBRWJaQW5MTmtFMmFWMENLeEx6bUZoSTM5WkFTZ1NxVG5tcGtlY3BPV2pHbDBoQkpUeHRlRVpCcmNPem5LMVd5dlJaQUpGOWI5bmNuYUtSbkJvNVdzVFpBdWZGMENzdXBiSkZGY250Z255MFpBdnZ2WkJsTmU3ZFpCb3BrWkQiLCJhbGdvcml0aG0iOiJITUFDLVNIQTI1NiIsImlzc3VlZF9hdCI6MTczMjIwODc3OX0; csrftoken=9CZmZa1yWdODfz7L08cnaJerQJoH6UX2; ds_user_id=8337021434; ig_direct_region_hint=\"FRC\\0548337021434\\0541768598626:01f7bf573fba19360c60be85233440f5d13483b6da6018fed9b2addf37eaf33e8d9263ea\"; sessionid=8337021434%3A16QWbheL5V0m9T%3A22%3AAYe3xnwQDWirm5AfHj8vTrTz3dQZN-g4Kp9vZpqTRBo; wd=1366x389; rur=\"NHA\\0548337021434\\0541768726176:01f77e572643858ef666e1dd0b3487ace9fcd4b9f3a465a71e73e2c396a88b77dc8eb84a\"",
-            "Referer": "https://www.instagram.com/lucy.ai23/p/DEzbnrfoCdD/",
-            "Referrer-Policy": "strict-origin-when-cross-origin"
-        },
-        "body": null,
-        "method": "GET"
-    });*/
-
     suspend fun page(
         url: String,
         onError: (status: Int) -> Unit,
@@ -121,6 +80,7 @@ class Api {
         val response: HttpResponse = client.get(url) {
             headers {
                 append("accept", "text/html")
+                if (rCookies != null) append("cookie", rCookies!!)
             }
         }
         if (response.status == HttpStatusCode.OK)
@@ -207,15 +167,12 @@ class Api {
     inner class CustomCookiesStorage : CookiesStorage {
         override suspend fun get(requestUrl: Url): List<Cookie> =
             arrayListOf<Cookie>().apply {
-                for ((k, v) in cookies) add(Cookie(k, v, domain = IG_DOMAIN))
+                for ((k, v) in cookies) add(Cookie(k, v))
             }
 
-        @Suppress("SpellCheckingInspection")
         override suspend fun addCookie(requestUrl: Url, cookie: Cookie) {
-            when (cookie.name) {
-                "sessionid" -> {}  // IG will try to invalidate the session!
-                else -> cookies[cookie.name] = cookie.value
-            }
+            if (cookie.name in arrayOf(COOKIE_CSRF_TOKEN))
+                cookies[cookie.name] = cookie.value
         }
 
         override fun close() {

@@ -17,7 +17,7 @@ class Downloader(private val api: Api) {
     private val queue = arrayListOf<Queued>()
 
     suspend fun handleLink(link: String) {
-        if ("/p/" in link || "/reel/" in link) api.page(link, { status ->
+        /*if ("/p/" in link || "/reel/" in link) */api.page(link, { status ->
             when (status) {
                 429 -> throw IllegalStateException("Too man requests!")
                 else -> throw IllegalStateException("Error $status!")
@@ -27,8 +27,8 @@ class Downloader(private val api: Api) {
             val data = RelayPrefetchedStreamCache.crawl(html) { // hashMapOf<String, Map<String, Any>>()
                 it.contains("PolarisPostRootQueryRelayPreloader")
             }
-            //println("Found: " + data.keys.joinToString(", "))
-            //return@page
+            println("Found: " + data.keys.joinToString(", "))
+            return@page
 
             if ("PolarisPostRootQueryRelayPreloader" in data) {
                 @Suppress("UNCHECKED_CAST")
@@ -123,10 +123,10 @@ class Downloader(private val api: Api) {
                     ) throw IllegalStateException("Unknown response ${root.rootView.resource.__dr}")
                 }
             }*/
-        } else {
+        }/* else {
             // TODO STORY, HIGHLIGHTS, TV
             //enqueue(link, )
-        }
+        }*/
     }
 
     private suspend fun enqueue(link: String, med: Media) {
