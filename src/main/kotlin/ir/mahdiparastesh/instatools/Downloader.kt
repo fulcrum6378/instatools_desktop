@@ -16,19 +16,20 @@ import java.io.File
 class Downloader(private val api: Api) {
     private val queue = arrayListOf<Queued>()
 
-    suspend fun handleLink(link: String) {
-        /*if ("/p/" in link || "/reel/" in link) */api.page(link, { status ->
+    /** Detects download URLs of desired media via their official links. */
+    suspend fun handlePostLink(link: String) {
+        api.page(link, { status ->
             when (status) {
-                429 -> throw IllegalStateException("Too man requests!")
-                else -> throw IllegalStateException("Error $status!")
+                302 -> System.err.println("Found redirection!")
+                429 -> System.err.println("Too many requests!")
+                else -> System.err.println("HTTP error code $status!")
             }
         }) { html ->
-            //println(html)
             val data = RelayPrefetchedStreamCache.crawl(html) { // hashMapOf<String, Map<String, Any>>()
                 it.contains("PolarisPostRootQueryRelayPreloader")
             }
-            println("Found: " + data.keys.joinToString(", "))
-            return@page
+            if (System.getenv("debug") == "1")
+                println("RelayPrefetchedStreamCache: " + data.keys.joinToString(", "))
 
             if ("PolarisPostRootQueryRelayPreloader" in data) {
                 @Suppress("UNCHECKED_CAST")
@@ -36,99 +37,19 @@ class Downloader(private val api: Api) {
                 enqueue(link, Gson().fromJson(Gson().toJson(medMap), Media::class.java))
             } else if ("instagram://media?id=" in html) {
                 val medId = html.substringAfter("instagram://media?id=").substringBefore("\"")
-                println("Media ID: $medId")
+                if (System.getenv("debug") == "1")
+                    println("Media ID: $medId")
                 api.call<Rest.LazyList<Media>>(
                     Api.Endpoint.MEDIA_INFO.url.format(medId), Rest.LazyList::class,
                     typeToken = object : TypeToken<Rest.LazyList<Media>>() {}.type,
-                    onError = { status, _ ->
-                        throw IllegalStateException("Error $status!")
-                    }
+                    onError = { status, _ -> System.err.println("Error $status!") }
                 ) { singleItemList -> enqueue(link, singleItemList.items.first()) }
             } else
-                throw IllegalStateException("Shall we re-implement PageConfig?")
-
-            /*val root = ((cnfWrapper.require.keys
-                .find { it.startsWith("CometPlatformRootClient") }
-                ?.let { cnfWrapper.require[it] }
-                ?.getOrNull(2) as? List<Any>)
-                ?.getOrNull(0) as? Map<String, Map<String, Any?>>)
-                ?.get("initialRouteInfo")?.get("route")?.let {
-                    Gson().fromJson(Gson().toJson(it), RelayPrefetchedStreamCache.PolarisRoot::class.java)
-                }
-                ?: throw IllegalStateException("Couldn't extract configurations from HTML!")
-
-            when (root.rootView.resource.__dr) {
-                "PolarisStoriesV3Root.react",
-                "PolarisStoriesMediaRoot.react" -> api.call<Rest.Reels<Rest.StoryReel>>(
-                    Api.Endpoint.REEL_ITEM.url.format(root.rootView.props.user_id), Rest.Reels::class,
-                    typeToken = object : TypeToken<Rest.Reels<Rest.StoryReel>>() {}.type
-                ) { reels ->
-                    val rel = reels.reels.getOrElse(root.rootView.props.user_id) { null }
-                    val med = rel?.items?.find { it.pk == root.params.initial_media_id }
-                        ?: throw IllegalStateException("med == null")
-                    queue.add(
-                        Queued(
-                            link,
-                            med.taken_at.xFromSeconds(),
-                            rel.user.pk,
-                            rel.user.username,
-                            med.pk,
-                            med.nearest(Versioned.BEST),
-                            med.thumb(),
-                            med.media_type.toInt().toByte(),
-                            med.caption?.text
-                        )
-                    )
-                    download()
-                }
-
-                "PolarisStoriesV3HighlightsRoot.react",
-                "PolarisStoriesMediaHighlightsRoot.react" -> api.call<Rest.Reels<Rest.HighlightReel>>(
-                    Api.Endpoint.REEL_ITEM.url.format("highlight%3A${root.params.highlight_reel_id}"),
-                    Rest.Reels::class, typeToken = object : TypeToken<Rest.Reels<Rest.HighlightReel>>() {}.type
-                ) { reels ->
-                    val rel = reels.reels.getOrElse("highlight:${root.params.highlight_reel_id}") { null }
-                    val med = rel?.items?.find {
-                        it.id == link.substringAfter("story_media_id=").substringBefore("&")
-                    } ?: throw IllegalStateException("med == null")
-
-                    queue.add(
-                        Queued(
-                            link,
-                            med.taken_at.xFromSeconds(),
-                            rel.user.pk,
-                            rel.user.username,
-                            med.pk,
-                            med.nearest(Versioned.BEST),
-                            med.thumb(),
-                            med.media_type.toInt().toByte(),
-                            med.caption?.text,
-                        )
-                    )
-                    download()
-                }
-                // Instagram cannot distinguish between contents of a private account and
-                // link of a public account itself; therefore this case should not be applied.
-                *//*"PolarisProfileRoot.react" -> {
-                    CoroutineScope(Dispatchers.IO)
-                        .launch { dao.deleteQueued(cur.qud!!) }
-                        .invokeOnCompletion { linkHandled() }
-                }*//*
-                "PolarisLoginRoot.react", "PolarisChallengeRoot.react" ->
-                    throw IllegalStateException("You are logged out!")
-
-                else -> {
-                    if (System.getenv("test") == "1" && root.rootView.resource.__dr !in
-                        arrayOf("PolarisErrorRoot.react", "PolarisProfileRoot.react")
-                    ) throw IllegalStateException("Unknown response ${root.rootView.resource.__dr}")
-                }
-            }*/
-        }/* else {
-            // TODO STORY, HIGHLIGHTS, TV
-            //enqueue(link, )
-        }*/
+                System.err.println("Shall we re-implement PageConfig?")
+        }
     }
 
+    /** Enqueues a media to be downloaded. */
     private suspend fun enqueue(link: String, med: Media) {
         if (med.carousel_media != null) for (car in med.carousel_media) queue.add(
             Queued(
@@ -158,6 +79,7 @@ class Downloader(private val api: Api) {
         download()
     }
 
+    /** Downloads a media and saves it. */
     private suspend fun download() {
         val downloads = File("./downloads/")
         if (!downloads.isDirectory) downloads.mkdir()
@@ -171,6 +93,7 @@ class Downloader(private val api: Api) {
         queue.clear()
     }
 
+    /** Data structure for information of a media. */
     data class Queued(
         val link: String,
         var date: Long,
@@ -183,12 +106,6 @@ class Downloader(private val api: Api) {
         var caption: String? = null,
     ) {
         fun fileName() = "${userName}_${Utils.fileDateTime(date)}_" +
-                "$itemId.${MediaType.entries.find { it.inDb == mediaType }!!.ext}"
-    }
-
-    enum class MediaType(val ext: String, val inDb: Byte) {
-        PHOTO("jpg", 1),
-        VIDEO("mp4", 2),
-        AUDIO("m4a", 3),
+                "$itemId.${Media.Type.entries.find { it.inDb == mediaType }!!.ext}"
     }
 }

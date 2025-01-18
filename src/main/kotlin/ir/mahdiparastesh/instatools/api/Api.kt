@@ -4,39 +4,26 @@ import com.google.gson.Gson
 import io.ktor.client.*
 import io.ktor.client.engine.*
 import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.cookies.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import java.io.File
 import java.io.FileInputStream
-import java.io.FileOutputStream
 import kotlin.reflect.KClass
 
 class Api {
     val client = HttpClient(CIO) {
         followRedirects = false
-        /*install(HttpCookies) {
-            storage = CustomCookiesStorage()
-        }*/
         engine {
             proxy = ProxyBuilder.http("http://127.0.0.1:8580/")
         }
     }
-    private var fCookies: File? = null
-    private var rCookies: String? = null
-    private var cookies = hashMapOf<String, String>()
+    private var cookies = ""
 
     fun loadCookies(path: String = "cookies.txt"): Boolean {
-        fCookies = File(path)
-        if (!fCookies!!.exists()) return false
-        var kv: List<String>
-        rCookies = FileInputStream(fCookies!!).use { String(it.readBytes()) }
-        rCookies!!.trim().split("; ").forEach {
-            kv = it.split("=")
-            if (kv.size != 2) return@forEach
-            cookies[kv[0]] = kv[1]
-        }
+        val f = File(path)
+        if (!f.exists()) return false
+        cookies = FileInputStream(f).use { String(it.readBytes()) }
         return true
     }
 
@@ -54,16 +41,17 @@ class Api {
             method = httpMethod
             headers {
                 append("x-asbd-id", "129477")
-                if (COOKIE_CSRF_TOKEN in cookies)
-                    append("x-csrftoken", cookies[COOKIE_CSRF_TOKEN]!!)
+                if (cookies.contains("csrftoken=")) append(
+                    "x-csrftoken",
+                    cookies.substringAfter("csrftoken=").substringBefore(";")
+                )
                 append("x-ig-app-id", "936619743392459")
-                if (rCookies != null) append("cookie", rCookies!!)
+                append("cookie", cookies)
             }
             if (body != null) setBody(body)
         }
-        println(response.headers.getAll("Set-Cookie")?.joinToString("; ") { it.split("; ")[0] })
         val text = response.bodyAsText()
-        if (System.getenv("test") == "1")
+        if (System.getenv("debug") == "1")
             println(text)
         if (response.status == HttpStatusCode.OK)
             onSuccess(Gson().fromJson(text, typeToken ?: clazz.java) as JSON)
@@ -80,7 +68,7 @@ class Api {
         val response: HttpResponse = client.get(url) {
             headers {
                 append("accept", "text/html")
-                if (rCookies != null) append("cookie", rCookies!!)
+                append("cookie", cookies)
             }
         }
         if (response.status == HttpStatusCode.OK)
@@ -90,9 +78,7 @@ class Api {
     }
 
     companion object {
-        const val IG_DOMAIN = "https://www.instagram.com/"
         const val POST_HASH = "8c2a529969ee035a5063f2fc8602a0fd"
-        const val COOKIE_CSRF_TOKEN = "csrftoken"
 
         /** Converts a seconds timestamp to a milliseconds one. */
         fun Double.xFromSeconds() = toLong() * 1000L
@@ -162,27 +148,5 @@ class Api {
         SIGN_OUT("https://www.instagram.com/accounts/logout/ajax/"),// MEDIA_ITEM
 
         RAW_QUERY("https://www.instagram.com/graphql/query"),
-    }
-
-    inner class CustomCookiesStorage : CookiesStorage {
-        override suspend fun get(requestUrl: Url): List<Cookie> =
-            arrayListOf<Cookie>().apply {
-                for ((k, v) in cookies) add(Cookie(k, v))
-            }
-
-        override suspend fun addCookie(requestUrl: Url, cookie: Cookie) {
-            if (cookie.name in arrayOf(COOKIE_CSRF_TOKEN))
-                cookies[cookie.name] = cookie.value
-        }
-
-        override fun close() {
-            if (fCookies == null) return
-            FileOutputStream(fCookies!!).use {
-                val sb = StringBuilder()
-                for ((k, v) in cookies) sb.append(k).append("=").append(v).append("; ")
-                sb.delete(sb.length - 2, sb.length)
-                it.write(sb.toString().encodeToByteArray())
-            }
-        }
     }
 }
