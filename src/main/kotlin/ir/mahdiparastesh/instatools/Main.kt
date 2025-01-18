@@ -3,8 +3,6 @@ package ir.mahdiparastesh.instatools
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.GraphQl
 import ir.mahdiparastesh.instatools.api.Rest
-import ir.mahdiparastesh.instatools.mod.Links
-import ir.mahdiparastesh.instatools.srv.Queuer
 
 suspend fun main(args: Array<String>) {
     val interactive = args.isEmpty()
@@ -21,6 +19,7 @@ Copyright © Mahdi Parastesh - All Rights Reserved.
 >> List of commands:
 c, cookies <PATH>            Load cookies from `cookies.txt` or you can specify another file.
 d, download <LINK|PATH>      Download post via their single links or multiple links inside a text file.
+s, saved                     List saved posts
 e, export <LINK>             Export a conversation via its link.
 p, profile <USER>            Get information about a user's profile. (e.g. p fulcrum6378)
 u, user <ID>                 Find a user's name using their unique Instagram REST ID number. (e.g. u 8337021434)
@@ -33,7 +32,7 @@ q, quit                      Quit the program.
     val api = Api()
     if (!api.loadCookies())
         System.err.println("No cookies found; insert cookies in `cookies.txt` right beside this JAR...")
-    val queuer = Queuer(api)
+    val c = Controller(api)
 
     // execute commands
     var repeat = true
@@ -60,9 +59,14 @@ q, quit                      Quit the program.
             "d", "download" -> if (a.size != 2)
                 System.err.println("Invalid command!")
             else if ("/p/" in a[1] || "/reel/" in a[1])
-                Links.handlePostLink(a[1], queuer)
+                c.handlePostLink(a[1])
             else
                 System.err.println("Only links to posts and reel are supported!")
+
+            "s", "saved" -> if (a.size == 1)
+                c.listSavedPosts()
+            else
+
 
             "e", "export" -> {
                 // TODO

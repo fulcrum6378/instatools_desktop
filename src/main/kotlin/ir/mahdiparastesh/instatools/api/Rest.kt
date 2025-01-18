@@ -1,29 +1,19 @@
 package ir.mahdiparastesh.instatools.api
 
-@Suppress("SpellCheckingInspection", "MemberVisibilityCanBePrivate", "PropertyName")
+@Suppress("SpellCheckingInspection", "PropertyName")
 interface Rest {
     val status: String
 
-    data class User(
-        val friendship_status: Map<String, Any?>?,
-        val full_name: String?,
-        val id: String,
-        val is_private: Boolean?,
-        val is_unpublished: Boolean?,
-        val pk: String,
-        val profile_pic_url: String,
-        val username: String,
-    ) {
-        fun visName() = full_name?.ifBlank { username } ?: username
-    }
-
     data class LazyList<N>(
-        val num_results: Float,
-        val more_available: Boolean,
-        val items: List<N>,
         val auto_load_more_enabled: Boolean,
+        val items: List<N>,
+        val more_available: Boolean,
+        val next_max_id: String?,
+        val num_results: Float, // in current fetch, not real total
         override val status: String,
     ) : Rest
+
+    data class SavedItem(val media: Media)
 
     data class UserInfo(
         val user: User,
@@ -50,30 +40,9 @@ interface Rest {
     ) : Rest
 
     data class Friendships(
-        val friendship_statuses: Map<String, FriendshipStatus>,
+        val friendship_statuses: Map<String, User.FriendshipStatus>,
         override val status: String
     ) : Rest
-
-    data class FriendshipStatus(
-        //val blocking: Boolean?, // only in mute/unmute and show(one)
-        //val followed_by: Boolean?, // only in mute/unmute and show(one)
-        //val following: Boolean,
-        //val incoming_request: Boolean?, // only in show_many and show(one)
-        val is_bestie: Boolean,
-        //val is_blocking_reel: Boolean?, // only in mute/unmute and show(one)
-        //val is_eligible_to_subscribe: Boolean?, // only in mute/unmute and show(one)
-        val is_feed_favorite: Boolean?, // only in show_many and mute/unmute and show(one)
-        //val is_guardian_of_viewer: Boolean?, // only in show(one)
-        //val is_muting_notes: Boolean?, // only in show(one)
-        //val is_muting_reel: Boolean?, // only in reels_tray and mute/unmute and show(one)
-        //val is_private: Boolean?, // only in show_many and mute/unmute and show(one)
-        val is_restricted: Boolean?, // only in show_many and mute/unmute and show(one)
-        //val is_supervised_by_viewer: Boolean?, // only in show(one)
-        //val muting: Boolean?, // only in reels_tray and mute/unmute and show(one)
-        //val outgoing_request: Boolean,
-        //val status: Boolean?, // as Rest, only in show(one)
-        //val subscribed: Boolean?, // only in mute/unmute and show(one)
-    )
 
     /*data class InboxPage(
         //val has_pending_top_requests: Boolean,

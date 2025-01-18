@@ -34,7 +34,6 @@ class Api {
         httpMethod: HttpMethod = HttpMethod.Get,
         body: String? = null,
         typeToken: java.lang.reflect.Type? = null,
-        onError: ((status: Int, body: String) -> Unit)? = null,
         onSuccess: suspend (json: JSON) -> Unit
     ) {
         val response: HttpResponse = client.request(url) {
@@ -55,9 +54,8 @@ class Api {
             println(text)
         if (response.status == HttpStatusCode.OK)
             onSuccess(Gson().fromJson(text, typeToken ?: clazz.java) as JSON)
-        else {
-            if (onError != null) onError(response.status.value, text)
-        }
+        else
+            System.err.println("Error ${response.status.value}!")
     }
 
     suspend fun page(
