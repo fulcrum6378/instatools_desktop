@@ -14,13 +14,13 @@ interface Rest {
         val is_verified: Boolean
     }
 
-    data class MediaInfo(
-        val num_results: Float,
-        val more_available: Boolean,
-        val items: List<Media>,
-        //var auto_load_more_enabled: Boolean,
+    interface LazyList<N> : Rest {
+        val num_results: Float
+        val more_available: Boolean
+        val items: List<N>
+        val auto_load_more_enabled: Boolean
         override val status: String
-    ) : Rest
+    }
 
 
     class UserOld(

@@ -2,10 +2,11 @@ package ir.mahdiparastesh.instatools.api
 
 import java.util.concurrent.CopyOnWriteArrayList
 
-@Suppress(
-    "SpellCheckingInspection", "MemberVisibilityCanBePrivate", "PropertyName", "unused"
-)
-class GraphQl(val data: GraphQlData?) : Rest() {
+@Suppress("SpellCheckingInspection", "MemberVisibilityCanBePrivate", "PropertyName")
+class GraphQl(
+    val data: GraphQlData?,
+    override val status: String
+) : Rest {
 
     class GraphQlData(
         val user: User?,

@@ -1,6 +1,7 @@
 package ir.mahdiparastesh.instatools
 
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.util.cio.*
@@ -23,9 +24,9 @@ class Downloader(private val api: Api) {
             }
         }) { html ->
             //println(html)
-            val data = RelayPrefetchedStreamCache.crawl(html) {
+            val data = hashMapOf<String, Map<String, Any>>()/*RelayPrefetchedStreamCache.crawl(html) {
                 it.contains("PolarisPostRootQueryRelayPreloader")
-            }
+            }*/
             //println("Found: " + data.keys.joinToString(", "))
             //return@page
 
@@ -61,12 +62,14 @@ class Downloader(private val api: Api) {
                 download()
             } else if ("instagram://media?id=" in html) {
                 val medId = html.substringAfter("instagram://media?id=").substringBefore("\"")
-                api.call<Rest.MediaInfo>(
-                    Api.Endpoint.MEDIA_INFO.url.format(medId), Rest.MediaInfo::class,
+                println("Media ID: $medId")
+                api.call<Rest.LazyList<Media>>(
+                    Api.Endpoint.MEDIA_INFO.url.format(medId), Rest.LazyList::class,
+                    typeToken = object : TypeToken<Rest.LazyList<Media>>() {}.type,
                     onError = { status, body ->
                     }
-                ) { mediaInfo ->
-                    mediaInfo.items.first()  // TODO ...
+                ) { list ->
+                    list.items.first()  // TODO ...
 
                     download()
                 }

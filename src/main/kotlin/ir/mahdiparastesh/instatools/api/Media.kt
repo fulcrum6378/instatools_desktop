@@ -4,35 +4,80 @@ import kotlin.math.abs
 
 @Suppress("PropertyName", "SpellCheckingInspection")
 interface Media {
-    val pk: String
-    val id: String
     val accessibility_caption: String?
+    val carousel_parent_id: String?
+    val display_uri: String?
+    val has_liked: Boolean
+    val id: String
+    val image_versions2: ImageVersions2
+    val inventory_source: Any?
     val is_dash_eligible: Any? // sometimes boolean sometimes double(0|1)
-    val video_dash_manifest: String?
+    val like_count: Double?
+    val link: Any?
+    val logging_info_token: Any?
+    val media_overlay_info: Any?
+    val media_type: Float
+    val number_of_qualities: Float?
+    val organic_tracking_token: String?
     val original_height: Float
     val original_width: Float
-    val image_versions2: ImageVersions2
-    val carousel_parent_id: String?
-    val sharing_friction_info: Map<String, Any?>
-    val preview: String?
-    val organic_tracking_token: String?
-    val video_versions: List<VideoVersion>?
-    val media_overlay_info: Any?
-    val usertags: Map<String, Any?>
-    val media_type: Float
-    val display_uri: String?
-    val user: MediaUser?
-    val number_of_qualities: Float?
-    val taken_at: Double
-    val previous_submitter: Any?
-    val link: Any?
-    val story_cta: Any?
-    val has_liked: Boolean
-    val like_count: Double?
-    val inventory_source: Any?
-    val logging_info_token: Any?
     val owner: MediaOwner?
+    val pk: String
+    val preview: String?
+    val previous_submitter: Any?
+    val sharing_friction_info: Map<String, Any?>
+    val story_cta: Any?
+    val taken_at: Double
+    val user: MediaUser?
+    val usertags: Map<String, Any?>
+    val video_dash_manifest: String?
+    val video_versions: List<VideoVersion>?
 
+
+    data class MediaInfo(
+        override val taken_at: Double,
+        override val pk: String,
+        override val id: String,
+        val fbid: String,
+        val device_timestamp: Double,
+        val caption_is_edited: Boolean,
+        val strong_id__: String,
+        val deleted_reason: Float,
+        val has_shared_to_fb: Float,
+        val has_delayed_metadata: Boolean,
+        val mezql_token: String,
+        val share_count_disabled: Boolean,
+        val is_visual_reply_commenter_notice_enabled: Boolean,
+        val like_and_view_counts_disabled: Boolean,
+        val is_post_live_clips_media: Boolean,
+        val can_modify_carousel: Boolean,
+        val is_quiet_post: Boolean,
+        val comment_threading_enabled: Boolean,
+        val is_unified_video: Boolean,
+        val commerciality_status: String,
+        val client_cache_key: String,
+        val integrity_review_decision: String,
+        val should_request_ads: Boolean,
+        val is_reshare_of_text_post_app_media_in_ig: Boolean,
+        val has_privately_liked: Boolean,
+        val filter_type: Float,
+        override val usertags: Map<String, List<Any>>,
+        val photo_of_you: Boolean,
+        val can_see_insights_as_brand: Boolean,
+        override val media_type: Float,
+        val code: String,
+        val caption: Caption, // FIXME
+        override val sharing_friction_info: Map<String, Any?>,
+        val timeline_pinned_user_ids: List<Any>,
+        val has_views_fetching: Boolean,
+        override val accessibility_caption: String,
+        val original_media_has_visual_reply_media: Boolean,
+        val fb_user_tags: Map<String, List<Any>>,
+        val coauthor_producers: List<MediaAuthor>,
+        val coauthor_producer_can_see_organic_insights: Boolean,
+        val invited_coauthor_producers: List<MediaAuthor>,
+
+    ): Media
 
     data class Post(
         val code: String,
@@ -61,7 +106,7 @@ interface Media {
         val can_viewer_reshare: Boolean,
         val product_type: String,
         override val media_type: Float,
-        override val usertags: Map<String, Any?>,
+        override val usertags: Map<String, List<Any>>,
         override val media_overlay_info: Any?,
         val carousel_media: List<CarouselItem>?,
         val location: Map<String, Any?>?,
@@ -128,7 +173,7 @@ interface Media {
         override val organic_tracking_token: String?,
         override val video_versions: List<VideoVersion>?,
         override val media_overlay_info: Any?,
-        override val usertags: Map<String, Any?>,
+        override val usertags: Map<String, List<Any>>,
         override val media_type: Float,
         override val display_uri: String?,
         override val user: MediaUser?,
