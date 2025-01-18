@@ -1,4 +1,4 @@
-package ir.mahdiparastesh.instatools
+package ir.mahdiparastesh.instatools.util
 
 import java.util.*
 

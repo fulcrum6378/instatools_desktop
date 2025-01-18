@@ -3,6 +3,8 @@ package ir.mahdiparastesh.instatools
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.GraphQl
 import ir.mahdiparastesh.instatools.api.Rest
+import ir.mahdiparastesh.instatools.mod.Links
+import ir.mahdiparastesh.instatools.srv.Queuer
 
 suspend fun main(args: Array<String>) {
     val interactive = args.isEmpty()
@@ -21,7 +23,7 @@ c, cookies <PATH>            Load cookies from `cookies.txt` or you can specify 
 d, download <LINK|PATH>      Download post via their single links or multiple links inside a text file.
 e, export <LINK>             Export a conversation via its link.
 p, profile <USER>            Get information about a user's profile. (e.g. p fulcrum6378)
-i, info <ID>                 Find a user using their unique Instagram ID number. (e.g. i 8337021434)
+u, user <ID>                 Find a user's name using their unique Instagram REST ID number. (e.g. u 8337021434)
 q, quit                      Quit the program.
 
     """.trimIndent()
@@ -31,7 +33,7 @@ q, quit                      Quit the program.
     val api = Api()
     if (!api.loadCookies())
         System.err.println("No cookies found; insert cookies in `cookies.txt` right beside this JAR...")
-    val downloader = Downloader(api)
+    val queuer = Queuer(api)
 
     // execute commands
     var repeat = true
@@ -58,10 +60,9 @@ q, quit                      Quit the program.
             "d", "download" -> if (a.size != 2)
                 System.err.println("Invalid command!")
             else if ("/p/" in a[1] || "/reel/" in a[1])
-                downloader.handlePostLink(a[1])
-            else {
+                Links.handlePostLink(a[1], queuer)
+            else
                 System.err.println("Only links to posts and reel are supported!")
-            }
 
             "e", "export" -> {
                 // TODO
@@ -76,13 +77,11 @@ q, quit                      Quit the program.
                 println(u.id)
             }
 
-            "i", "info" -> if (a.size != 2)
+            "u", "user" -> if (a.size != 2)
                 System.err.println("Invalid command!")
             else api.call<Rest.UserInfo>(
                 Api.Endpoint.INFO.url.format(a[1]), Rest.UserInfo::class
-            ) { info ->
-                println(info.user.username)
-            }
+            ) { info -> println("@${info.user.username}") }
 
             "q", "quit" -> repeat = false
 
