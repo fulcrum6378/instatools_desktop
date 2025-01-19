@@ -1,5 +1,6 @@
 package ir.mahdiparastesh.instatools.api
 
+import ir.mahdiparastesh.instatools.util.Utils
 import kotlin.math.abs
 
 @Suppress("PropertyName")
@@ -9,13 +10,13 @@ data class Media(
     val carousel_media: List<Media>?,
     val carousel_media_count: Float?,
     val carousel_media_ids: List<String>?,
-    val coauthor_producers: List<Rest.User>?,
+    val coauthor_producers: List<User>?,
     val code: String?,
     val comment_count: Float?,
     val device_timestamp: Double?,
     val has_audio: Boolean?,
-    val id: String,
-    val invited_coauthor_producers: List<Rest.User>?,
+    val id: String, // <media ID>_<user ID>
+    val invited_coauthor_producers: List<User>?,
     val image_versions2: ImageVersions2,
     val like_count: Double?,
     val location: Map<String, Any?>?,
@@ -24,12 +25,12 @@ data class Media(
     val organic_tracking_token: String?,
     val original_height: Float,
     val original_width: Float,
-    val owner: Rest.User?,
+    val owner: User?,
     val photo_of_you: Boolean?,
     val pk: String,
     val product_type: String?,
     val taken_at: Double,
-    val user: Rest.User?,
+    val user: User?,
     val video_dash_manifest: String?,
     val video_versions: List<Version>?,
     val view_count: Double?,
@@ -48,7 +49,7 @@ data class Media(
         val created_at: Double,
         val pk: String,
         val text: String,
-        val user: Rest.User?,
+        val user: User?,
         val user_id: String?,
     )
 
@@ -59,6 +60,14 @@ data class Media(
         const val BEST = -2f
         // Any positive number except these, represents an ideal width,
         // Any negative number except these, represents an ideal height.
+    }
+
+    fun link() = when (product_type) {
+        "feed", "carousel_container" -> Utils.POST_LINK.format(code)
+        "clips" -> Utils.REEL_LINK.format(code)
+        "story" -> Utils.STORY_LINK.format((owner ?: user)!!.username, pk)
+        null -> nearest(BEST)
+        else -> throw IllegalStateException("New product type: $product_type ?!?")
     }
 
     fun nearest(ideal: Float = BEST, justImage: Boolean = false): String? {
@@ -144,7 +153,7 @@ data class Media(
     }
 
     enum class Type(val ext: String, val inDb: Byte) {
-        PHOTO("jpg", 1),
+        IMAGE("jpg", 1),
         VIDEO("mp4", 2),
         AUDIO("m4a", 3),
     }

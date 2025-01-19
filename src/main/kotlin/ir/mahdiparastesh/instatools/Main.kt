@@ -3,6 +3,7 @@ package ir.mahdiparastesh.instatools
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.GraphQl
 import ir.mahdiparastesh.instatools.api.Rest
+import ir.mahdiparastesh.instatools.srv.Queuer
 
 suspend fun main(args: Array<String>) {
     val interactive = args.isEmpty()
@@ -19,7 +20,7 @@ Copyright © Mahdi Parastesh - All Rights Reserved.
 >> List of commands:
 c, cookies <PATH>            Load cookies from `cookies.txt` or you can specify another file.
 d, download <LINK|PATH>      Download post via their single links or multiple links inside a text file.
-s, saved                     List saved posts
+s, saved {reset|number}      List saved posts
 e, export <LINK>             Export a conversation via its link.
 p, profile <USER>            Get information about a user's profile. (e.g. p fulcrum6378)
 u, user <ID>                 Find a user's name using their unique Instagram REST ID number. (e.g. u 8337021434)
@@ -32,7 +33,8 @@ q, quit                      Quit the program.
     val api = Api()
     if (!api.loadCookies())
         System.err.println("No cookies found; insert cookies in `cookies.txt` right beside this JAR...")
-    val c = Controller(api)
+    val queuer = Queuer(api)
+    val c = Controller(api, queuer)
 
     // execute commands
     var repeat = true
@@ -53,7 +55,7 @@ q, quit                      Quit the program.
             "c", "cookies" -> {
                 if (if (a.size > 1) api.loadCookies(a[1]) else api.loadCookies())
                     println("Cookies loaded!")
-                else System.err.println("Such file doesn't exist!")
+                else System.err.println("Such a file doesn't exist!")
             }
 
             "d", "download" -> if (a.size != 2)
@@ -65,8 +67,16 @@ q, quit                      Quit the program.
 
             "s", "saved" -> if (a.size == 1)
                 c.listSavedPosts()
-            else
-
+            else if (a[1] == "reset")
+                c.listSavedPosts(true)
+            else {
+                try {
+                    queuer.enqueue(c.savedPosts[a[1].toInt() - 1])
+                } catch (e: Exception) {
+                    System.err.println("Invalid command: ${e::class.simpleName}")
+                }
+                // TODO UNSAVE
+            }
 
             "e", "export" -> {
                 // TODO

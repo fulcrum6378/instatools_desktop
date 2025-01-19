@@ -2,51 +2,60 @@ package ir.mahdiparastesh.instatools.srv
 
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.util.cio.*
-import io.ktor.utils.io.*
 import ir.mahdiparastesh.instatools.api.Api
-import ir.mahdiparastesh.instatools.api.Api.Companion.xFromSeconds
 import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.util.Utils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.apache.commons.imaging.Imaging
+import org.apache.commons.imaging.formats.jpeg.JpegImageMetadata
+import org.apache.commons.imaging.formats.jpeg.exif.ExifRewriter
+import org.apache.commons.imaging.formats.tiff.constants.ExifTagConstants
+import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants
+import org.apache.commons.imaging.formats.tiff.write.TiffOutputSet
+import java.io.BufferedOutputStream
 import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
 
 class Queuer(val api: Api) {
     private var active = false
     private val queue = CopyOnWriteArrayList<Queued>()
     private val downloads = File("./downloads/")
+    private val tiffDate = SimpleDateFormat("yyyy:MM:dd kk:mm:ss", Locale.getDefault())
 
     init {
         if (!downloads.isDirectory) downloads.mkdir()
     }
 
     /** Enqueues a media to be downloaded. */
-    suspend fun enqueue(link: String, med: Media) {
+    suspend fun enqueue(med: Media, link: String? = null) {
+        val u = med.owner ?: med.user!!
         if (med.carousel_media != null) for (car in med.carousel_media) queue.add(
             Queued(
-                link,
-                med.taken_at.xFromSeconds(),
-                med.user!!.pk,
-                med.user.username,
                 car.pk,
-                car.nearest(Media.BEST),
-                car.thumb(),
+                Utils.convertSecondsToMS(med.taken_at),
+                Utils.rationaliseTimestamp(car.device_timestamp),
+                car.nearest(Media.BEST)!!,
                 car.media_type.toInt().toByte(),
-                med.caption!!.text
+                u.username,
+                med.caption!!.text,
+                link ?: med.link(),
+                //car.thumb()
             )
         ) else queue.add(
             Queued(
-                link,
-                med.taken_at.xFromSeconds(),
-                med.user!!.pk,
-                med.user.username,
                 med.pk,
-                med.nearest(Media.BEST),
-                med.thumb(),
+                Utils.convertSecondsToMS(med.taken_at),
+                Utils.rationaliseTimestamp(med.device_timestamp),
+                med.nearest(Media.BEST)!!,
                 med.media_type.toInt().toByte(),
-                med.caption!!.text
+                u.username,
+                med.caption!!.text,
+                link ?: med.link(),
+                //med.thumb()
             )
         )
 
@@ -59,7 +68,48 @@ class Queuer(val api: Api) {
         var fn: String
         while (queue.isNotEmpty()) queue.first().also { q ->
             fn = q.fileName()
-            api.client.get(q.url!!).bodyAsChannel().copyAndClose(File(downloads, fn).writeChannel())
+            //api.client.get(q.url!!).bodyAsChannel().copyAndClose(File(downloads, fn).writeChannel())
+            val ba = api.client.get(q.url).bodyAsBytes()
+            val fos = FileOutputStream(File(downloads, fn))
+            when (q.mediaType) {
+                Media.Type.IMAGE.inDb -> ExifRewriter().updateExifMetadataLossless(
+                    ba,
+                    BufferedOutputStream(fos),
+                    ((Imaging.getMetadata(ba) as JpegImageMetadata?)?.exif?.outputSet
+                        ?: TiffOutputSet()).apply {
+                        orCreateRootDirectory.apply {
+                            removeField(TiffTagConstants.TIFF_TAG_IMAGE_DESCRIPTION) // Title + Subject
+                            if (q.link != null)
+                                add(TiffTagConstants.TIFF_TAG_IMAGE_DESCRIPTION, q.link)
+
+                            removeField(ExifTagConstants.EXIF_TAG_SOFTWARE)
+                            add(ExifTagConstants.EXIF_TAG_SOFTWARE, Utils.APP_NAME)
+
+                            removeField(TiffTagConstants.TIFF_TAG_ARTIST) // Authors
+                            add(TiffTagConstants.TIFF_TAG_ARTIST, q.userName)
+
+                            removeField(TiffTagConstants.TIFF_TAG_COPYRIGHT)
+                            add(TiffTagConstants.TIFF_TAG_COPYRIGHT, "IG: @${q.userName}")
+                        }
+                        orCreateExifDirectory.apply {
+                            removeField(ExifTagConstants.EXIF_TAG_DATE_TIME_ORIGINAL)
+                            if (q.dateTaken != null) add( // Date taken
+                                ExifTagConstants.EXIF_TAG_DATE_TIME_ORIGINAL,
+                                tiffDate.format(q.dateTaken)
+                            )
+
+                            q.caption.also {
+                                removeField(ExifTagConstants.EXIF_TAG_USER_COMMENT)
+                                add(ExifTagConstants.EXIF_TAG_USER_COMMENT, it)
+                            }
+
+                            removeField(ExifTagConstants.EXIF_TAG_SITE)
+                            add(ExifTagConstants.EXIF_TAG_SITE, q.link)
+                        }
+                    }) // location data is currently not possible with edge post location.
+                else -> fos.write(ba)
+            }
+            fos.close()
             println("Downloaded $fn")
             queue.removeFirst()
         }
@@ -68,17 +118,17 @@ class Queuer(val api: Api) {
 
     /** Data structure for information of a media. */
     data class Queued(
-        val link: String,
-        var date: Long,
-        var userId: String,
-        var userName: String? = null,
-        var itemId: String? = null,
-        var url: String? = null,
-        var thumb: String? = null,
-        var mediaType: Byte,
-        var caption: String? = null,
+        val id: String,
+        val datePosted: Long,
+        val dateTaken: Long?,
+        val url: String,
+        val mediaType: Byte,
+        val userName: String,
+        val caption: String,
+        val link: String?,
+        //val thumb: String?,
     ) {
-        fun fileName() = "${userName}_${Utils.fileDateTime(date)}_" +
-                "$itemId.${Media.Type.entries.find { it.inDb == mediaType }!!.ext}"
+        fun fileName() = "${userName}_${Utils.fileDateTime(datePosted)}_" +
+                "$id.${Media.Type.entries.find { it.inDb == mediaType }!!.ext}"
     }
 }

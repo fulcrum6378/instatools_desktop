@@ -7,6 +7,7 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import ir.mahdiparastesh.instatools.util.Utils
 import java.io.File
 import java.io.FileInputStream
 import kotlin.reflect.KClass
@@ -55,12 +56,11 @@ class Api {
         if (response.status == HttpStatusCode.OK)
             onSuccess(Gson().fromJson(text, typeToken ?: clazz.java) as JSON)
         else
-            System.err.println("Error ${response.status.value}!")
+            error(response.status.value)
     }
 
     suspend fun page(
         url: String,
-        onError: (status: Int) -> Unit,
         onSuccess: suspend (html: String) -> Unit
     ) {
         val response: HttpResponse = client.get(url) {
@@ -72,14 +72,15 @@ class Api {
         if (response.status == HttpStatusCode.OK)
             onSuccess(response.bodyAsText())
         else
-            onError(response.status.value)
+            error(response.status.value)
     }
 
-    companion object {
-        const val POST_HASH = "8c2a529969ee035a5063f2fc8602a0fd"
-
-        /** Converts a seconds timestamp to a milliseconds one. */
-        fun Double.xFromSeconds() = toLong() * 1000L
+    private fun error(status: Int) {
+        when (status) {
+            302 -> System.err.println("Found redirection!")
+            429 -> System.err.println("Too many requests!")
+            else -> System.err.println("HTTP error code $status!")
+        }
     }
 
     @Suppress("unused")
@@ -95,7 +96,7 @@ class Api {
         // Posts & Stories
         MEDIA_INFO("https://www.instagram.com/api/v1/media/%s/info/"),
         POSTS(
-            "https://www.instagram.com/graphql/query/?query_hash=$POST_HASH" +
+            "https://www.instagram.com/graphql/query/?query_hash=${Utils.GRAPHQL_POST_HASH}" +
                     "&variables={\"id\":\"%1\$s\",\"first\":12,\"after\":\"%2\$s\"}"
         ),
         TAGGED("https://www.instagram.com/api/v1/usertags/%1\$s/feed/?count=12&max_id=%2\$s"),
