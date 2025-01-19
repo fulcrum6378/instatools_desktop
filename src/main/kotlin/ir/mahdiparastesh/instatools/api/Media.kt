@@ -13,7 +13,6 @@ data class Media(
     val coauthor_producers: List<User>?,
     val code: String?,
     val comment_count: Float?,
-    val device_timestamp: Double?,
     val has_audio: Boolean?,
     val id: String, // <media ID>_<user ID>
     val invited_coauthor_producers: List<User>?,
@@ -62,10 +61,12 @@ data class Media(
         // Any negative number except these, represents an ideal height.
     }
 
+    fun owner(): User = owner ?: user!!
+
     fun link() = when (product_type) {
         "feed", "carousel_container" -> Utils.POST_LINK.format(code)
         "clips" -> Utils.REEL_LINK.format(code)
-        "story" -> Utils.STORY_LINK.format((owner ?: user)!!.username, pk)
+        "story" -> Utils.STORY_LINK.format(owner().username, pk)
         null -> nearest(BEST)
         else -> throw IllegalStateException("New product type: $product_type ?!?")
     }

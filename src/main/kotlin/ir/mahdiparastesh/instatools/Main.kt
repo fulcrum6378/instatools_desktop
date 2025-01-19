@@ -3,7 +3,7 @@ package ir.mahdiparastesh.instatools
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.GraphQl
 import ir.mahdiparastesh.instatools.api.Rest
-import ir.mahdiparastesh.instatools.srv.Queuer
+import ir.mahdiparastesh.instatools.job.Queuer
 
 suspend fun main(args: Array<String>) {
     val interactive = args.isEmpty()
@@ -18,10 +18,15 @@ Copyright © Mahdi Parastesh - All Rights Reserved.
     if (interactive) println(
         """
 >> List of commands:
-c, cookies <PATH>            Load cookies from `cookies.txt` or you can specify another file.
-d, download <LINK|PATH>      Download post via their single links or multiple links inside a text file.
-s, saved {reset|number}      List saved posts
-e, export <LINK>             Export a conversation via its link.
+c, cookies <PATH>            Load the required cookies from a path. (defaults to `./cookies.txt`)
+d, download <LINK>           Download only a post or reel via its official link.
+s, saved                     Continuously list your saved posts.
+    s <NUMBER>               Download the post in that index.
+    s <NUMBER> [u|unsave]    Download + unsave the post in that index.
+    s reset                  Forget the previously loaded saved posts and load them again. (update)
+    s [u|unsave] <NUMBER>    Unsave the post in that index.
+    s [r|resave] <NUMBER>    Save the post in that index AGAIN.
+m, messages                  Lists your direct message threads.
 p, profile <USER>            Get information about a user's profile. (e.g. p fulcrum6378)
 u, user <ID>                 Find a user's name using their unique Instagram REST ID number. (e.g. u 8337021434)
 q, quit                      Quit the program.
@@ -59,26 +64,33 @@ q, quit                      Quit the program.
             }
 
             "d", "download" -> if (a.size != 2)
-                System.err.println("Invalid command!")
+                System.err.println("Please enter a link after \"${a[0]}\"; like \"${a[0]} https://\"...")
             else if ("/p/" in a[1] || "/reel/" in a[1])
                 c.handlePostLink(a[1])
             else
-                System.err.println("Only links to posts and reel are supported!")
+                System.err.println("Only links to Instagram posts and reels are supported!")
 
             "s", "saved" -> if (a.size == 1)
                 c.listSavedPosts()
-            else if (a[1] == "reset")
-                c.listSavedPosts(true)
-            else {
-                try {
-                    queuer.enqueue(c.savedPosts[a[1].toInt() - 1])
-                } catch (e: Exception) {
-                    System.err.println("Invalid command: ${e::class.simpleName}")
+            else when (a[1]) {
+                "reset" -> c.listSavedPosts(true)
+
+                "u", "unsave", "r", "resave" -> c.getSavedPost(a[2])?.also { med ->
+                    c.saveUnsave(med, a[1] == "u" || a[1] == "unsave")
                 }
-                // TODO UNSAVE
+
+                else -> c.getSavedPost(a[1])?.also { med ->
+                    queuer.enqueue(med)
+                    a.getOrNull(2)?.also { addition ->
+                        if (addition == "u" || addition == "unsave")
+                            c.saveUnsave(med, true)
+                        else
+                            System.err.println("Unknown additional command \"$addition\"!")
+                    }
+                }
             }
 
-            "e", "export" -> {
+            "m", "messages" -> {
                 // TODO
             }
 

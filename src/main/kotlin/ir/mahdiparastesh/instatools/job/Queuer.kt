@@ -1,4 +1,4 @@
-package ir.mahdiparastesh.instatools.srv
+package ir.mahdiparastesh.instatools.job
 
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -16,28 +16,20 @@ import org.apache.commons.imaging.formats.tiff.write.TiffOutputSet
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
-import java.text.SimpleDateFormat
-import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
 
 class Queuer(val api: Api) {
     private var active = false
     private val queue = CopyOnWriteArrayList<Queued>()
     private val downloads = File("./downloads/")
-    private val tiffDate = SimpleDateFormat("yyyy:MM:dd kk:mm:ss", Locale.getDefault())
-
-    init {
-        if (!downloads.isDirectory) downloads.mkdir()
-    }
 
     /** Enqueues a media to be downloaded. */
     suspend fun enqueue(med: Media, link: String? = null) {
-        val u = med.owner ?: med.user!!
+        val u = med.owner()
         if (med.carousel_media != null) for (car in med.carousel_media) queue.add(
             Queued(
                 car.pk,
-                Utils.convertSecondsToMS(med.taken_at),
-                Utils.rationaliseTimestamp(car.device_timestamp),
+                Utils.convertSecondsToMS(car.taken_at),
                 car.nearest(Media.BEST)!!,
                 car.media_type.toInt().toByte(),
                 u.username,
@@ -49,7 +41,6 @@ class Queuer(val api: Api) {
             Queued(
                 med.pk,
                 Utils.convertSecondsToMS(med.taken_at),
-                Utils.rationaliseTimestamp(med.device_timestamp),
                 med.nearest(Media.BEST)!!,
                 med.media_type.toInt().toByte(),
                 u.username,
@@ -65,44 +56,32 @@ class Queuer(val api: Api) {
     /** Downloads a media and saves it. */
     private suspend fun download() {
         active = true
+        if (!downloads.isDirectory) downloads.mkdir()
         var fn: String
         while (queue.isNotEmpty()) queue.first().also { q ->
             fn = q.fileName()
             //api.client.get(q.url!!).bodyAsChannel().copyAndClose(File(downloads, fn).writeChannel())
             val ba = api.client.get(q.url).bodyAsBytes()
             val fos = FileOutputStream(File(downloads, fn))
-            when (q.mediaType) {
+            when (q.type) {
                 Media.Type.IMAGE.inDb -> ExifRewriter().updateExifMetadataLossless(
-                    ba,
-                    BufferedOutputStream(fos),
-                    ((Imaging.getMetadata(ba) as JpegImageMetadata?)?.exif?.outputSet
+                    ba, BufferedOutputStream(fos), ((Imaging.getMetadata(ba) as JpegImageMetadata?)?.exif?.outputSet
                         ?: TiffOutputSet()).apply {
                         orCreateRootDirectory.apply {
                             removeField(TiffTagConstants.TIFF_TAG_IMAGE_DESCRIPTION) // Title + Subject
-                            if (q.link != null)
-                                add(TiffTagConstants.TIFF_TAG_IMAGE_DESCRIPTION, q.link)
-
+                            if (q.link != null) add(TiffTagConstants.TIFF_TAG_IMAGE_DESCRIPTION, q.link)
                             removeField(ExifTagConstants.EXIF_TAG_SOFTWARE)
                             add(ExifTagConstants.EXIF_TAG_SOFTWARE, Utils.APP_NAME)
-
                             removeField(TiffTagConstants.TIFF_TAG_ARTIST) // Authors
-                            add(TiffTagConstants.TIFF_TAG_ARTIST, q.userName)
-
+                            add(TiffTagConstants.TIFF_TAG_ARTIST, q.owner)
                             removeField(TiffTagConstants.TIFF_TAG_COPYRIGHT)
-                            add(TiffTagConstants.TIFF_TAG_COPYRIGHT, "IG: @${q.userName}")
+                            add(TiffTagConstants.TIFF_TAG_COPYRIGHT, "IG: @${q.owner}")
                         }
                         orCreateExifDirectory.apply {
-                            removeField(ExifTagConstants.EXIF_TAG_DATE_TIME_ORIGINAL)
-                            if (q.dateTaken != null) add( // Date taken
-                                ExifTagConstants.EXIF_TAG_DATE_TIME_ORIGINAL,
-                                tiffDate.format(q.dateTaken)
-                            )
-
                             q.caption.also {
                                 removeField(ExifTagConstants.EXIF_TAG_USER_COMMENT)
                                 add(ExifTagConstants.EXIF_TAG_USER_COMMENT, it)
                             }
-
                             removeField(ExifTagConstants.EXIF_TAG_SITE)
                             add(ExifTagConstants.EXIF_TAG_SITE, q.link)
                         }
@@ -119,16 +98,15 @@ class Queuer(val api: Api) {
     /** Data structure for information of a media. */
     data class Queued(
         val id: String,
-        val datePosted: Long,
-        val dateTaken: Long?,
+        val date: Long,
         val url: String,
-        val mediaType: Byte,
-        val userName: String,
+        val type: Byte,
+        val owner: String,
         val caption: String,
         val link: String?,
         //val thumb: String?,
     ) {
-        fun fileName() = "${userName}_${Utils.fileDateTime(datePosted)}_" +
-                "$id.${Media.Type.entries.find { it.inDb == mediaType }!!.ext}"
+        fun fileName() = "${owner}_${Utils.fileDateTime(date)}_" +
+                "$id.${Media.Type.entries.find { it.inDb == type }!!.ext}"
     }
 }

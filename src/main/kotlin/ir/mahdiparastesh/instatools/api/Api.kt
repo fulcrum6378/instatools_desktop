@@ -83,7 +83,6 @@ class Api {
         }
     }
 
-    @Suppress("unused")
     enum class Endpoint(val url: String) {
         // Profiles
         PROFILE("https://www.instagram.com/api/v1/users/web_profile_info/?username=%s"),
@@ -132,9 +131,8 @@ class Api {
 
         // Saving
         SAVED("https://www.instagram.com/api/v1/feed/saved/posts/"),
-        UNSAVE("https://www.instagram.com/web/save/%s/unsave/"),
-        //SAVE("https://www.instagram.com/web/save/%s/save/"),
-        // The fucking web API used /web/save for fulcrum6378 and /graphql/query for instatools.apk !?!
+        UNSAVE("https://www.instagram.com/api/v1/web/save/%s/unsave/"),
+        SAVE("https://www.instagram.com/api/v1/web/save/%s/save/"),
 
         // Messaging
         INBOX("https://www.instagram.com/api/v1/direct_v2/inbox/?cursor=%s"),

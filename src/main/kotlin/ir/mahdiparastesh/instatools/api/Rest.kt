@@ -4,6 +4,8 @@ package ir.mahdiparastesh.instatools.api
 interface Rest {
     val status: String
 
+    data class QuickResponse(override val status: String) : Rest
+
     data class LazyList<N>(
         val auto_load_more_enabled: Boolean,
         val items: List<N>,

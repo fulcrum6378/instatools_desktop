@@ -2,18 +2,20 @@ package ir.mahdiparastesh.instatools
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import io.ktor.http.*
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.api.RelayPrefetchedStreamCache
 import ir.mahdiparastesh.instatools.api.Rest
-import ir.mahdiparastesh.instatools.srv.Queuer
+import ir.mahdiparastesh.instatools.job.Queuer
+import ir.mahdiparastesh.instatools.util.Utils
 
 class Controller(
     private val api: Api,
     private val queuer: Queuer
 ) {
 
-    val savedPosts = arrayListOf<Media>()
+    private val savedPosts = arrayListOf<Media>()
     private var savedMaxId: String? = null
     private var savedIndex = 1
 
@@ -28,7 +30,7 @@ class Controller(
         ) { lazyList ->
             for (i in lazyList.items) {
                 println(
-                    "$savedIndex. ${i.media.link()} - @${i.media.owner?.username} : " +
+                    "$savedIndex. ${i.media.link()} - @${i.media.owner().username} : " +
                             "${i.media.caption?.text?.replace("\n", " ")}"
                 )
                 savedPosts.add(i.media)
@@ -40,6 +42,27 @@ class Controller(
                 savedMaxId = null
                 savedIndex = 1
             }
+        }
+        println("Enter `s` again to load more posts...")
+    }
+
+    fun getSavedPost(index: String): Media? = try {
+        savedPosts[index.toInt() - 1]
+    } catch (e: Exception) {
+        System.err.println("The number you entered is incorrect! (${e::class.simpleName})")
+        null
+    }
+
+    /** Saves or unsaves posts. */
+    suspend fun saveUnsave(med: Media, unsave: Boolean) {
+        api.call<Rest.QuickResponse>(
+            (if (unsave) Api.Endpoint.UNSAVE else Api.Endpoint.SAVE).url.format(med.pk),
+            Rest.QuickResponse::class, HttpMethod.Post
+        ) { rest ->
+            if (rest.status == Utils.REST_STATUS_OK)
+                println("Successfully ${if (unsave) "unsaved" else "saved"} ${med.link()}")
+            else
+                System.err.println("Couldn't ${if (unsave) "unsave" else "save"} this post!")
         }
     }
 
@@ -70,5 +93,4 @@ class Controller(
                 System.err.println("Shall we re-implement PageConfig?")
         }
     }
-
 }
