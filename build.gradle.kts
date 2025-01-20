@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "ir.mahdiparastesh"
-version = "0.8.5"
+version = "0.9.5"
 
 application {
     mainClass.set("ir.mahdiparastesh.instatools.MainKt")

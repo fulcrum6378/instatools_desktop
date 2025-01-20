@@ -1,9 +1,23 @@
 package ir.mahdiparastesh.instatools
 
+import ir.mahdiparastesh.instatools.Context.api
+import ir.mahdiparastesh.instatools.Context.direct
+import ir.mahdiparastesh.instatools.Context.queuer
+import ir.mahdiparastesh.instatools.Context.saved
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.GraphQl
 import ir.mahdiparastesh.instatools.api.Rest
 import ir.mahdiparastesh.instatools.job.Queuer
+import ir.mahdiparastesh.instatools.list.Direct
+import ir.mahdiparastesh.instatools.list.Saved
+import ir.mahdiparastesh.instatools.util.SimpleTasks
+
+object Context {
+    val api: Api by lazy { Api() }
+    val queuer: Queuer by lazy { Queuer() }
+    val saved: Saved by lazy { Saved() }
+    val direct: Direct by lazy { Direct() }
+}
 
 suspend fun main(args: Array<String>) {
     val interactive = args.isEmpty()
@@ -26,7 +40,9 @@ s, saved                     Continuously list your saved posts.
     s reset                  Forget the previously loaded saved posts and load them again. (update)
     s [u|unsave] <NUMBER>    Unsave the post in that index.
     s [r|resave] <NUMBER>    Save the post in that index AGAIN.
-m, messages                  Lists your direct message threads.
+m, messages                  List your direct message threads.
+    m <NUMBER>               Export the thread in that index.
+    m reset                  Forget the previously loaded thread and load them again. (update)
 p, profile <USER>            Get information about a user's profile. (e.g. p fulcrum6378)
 u, user <ID>                 Find a user's name using their unique Instagram REST ID number. (e.g. u 8337021434)
 q, quit                      Quit the program.
@@ -35,11 +51,8 @@ q, quit                      Quit the program.
     )
 
     // preparations
-    val api = Api()
     if (!api.loadCookies())
         System.err.println("No cookies found; insert cookies in `cookies.txt` right beside this JAR...")
-    val queuer = Queuer(api)
-    val c = Controller(api, queuer)
 
     // execute commands
     var repeat = true
@@ -66,37 +79,38 @@ q, quit                      Quit the program.
             "d", "download" -> if (a.size != 2)
                 System.err.println("Please enter a link after \"${a[0]}\"; like \"${a[0]} https://\"...")
             else if ("/p/" in a[1] || "/reel/" in a[1])
-                c.handlePostLink(a[1])
+                SimpleTasks.handlePostLink(a[1])
             else
                 System.err.println("Only links to Instagram posts and reels are supported!")
 
             "s", "saved" -> if (a.size == 1)
-                c.listSavedPosts()
+                saved.fetch()
             else when (a[1]) {
-                "reset" -> c.listSavedPosts(true)
+                "reset" -> saved.fetch(true)
 
-                "u", "unsave", "r", "resave" -> c.getSavedPost(a[2])?.also { med ->
-                    c.saveUnsave(med, a[1] == "u" || a[1] == "unsave")
+                "u", "unsave", "r", "resave" -> saved[a[2]]?.also { med ->
+                    saved.saveUnsave(med, a[1] == "u" || a[1] == "unsave")
                 }
 
-                else -> c.getSavedPost(a[1])?.also { med ->
+                else -> saved[a[1]]?.also { med ->
                     queuer.enqueue(med)
                     a.getOrNull(2)?.also { addition ->
                         if (addition == "u" || addition == "unsave")
-                            c.saveUnsave(med, true)
+                            saved.saveUnsave(med, true)
                         else
                             System.err.println("Unknown additional command \"$addition\"!")
                     }
                 }
             }
 
-            "m", "messages" -> {
-                api.call<Rest.InboxPage>(
-                    Api.Endpoint.INBOX.url.format(/*c.mm.dmInbox?.oldest_cursor ?:*/""),
-                    Rest.InboxPage::class,
-                ) { inbox ->
+            "m", "messages" -> if (a.size == 1)
+                direct.fetch()
+            else when (a[1]) {
+                "reset" -> direct.fetch(true)
+
+                else -> direct[a[1]]?.also { thread ->
+                    println(thread.exportFileName()) // TODO
                 }
-                // TODO
             }
 
             "p", "profile" -> if (a.size != 2)

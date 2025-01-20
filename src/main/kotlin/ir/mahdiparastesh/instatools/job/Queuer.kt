@@ -2,7 +2,7 @@ package ir.mahdiparastesh.instatools.job
 
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import ir.mahdiparastesh.instatools.api.Api
+import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.util.Utils
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +18,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.CopyOnWriteArrayList
 
-class Queuer(val api: Api) {
+class Queuer {
     private var active = false
     private val queue = CopyOnWriteArrayList<Queued>()
     private val downloads = File("./downloads/")
@@ -29,7 +29,7 @@ class Queuer(val api: Api) {
         if (med.carousel_media != null) for (car in med.carousel_media) queue.add(
             Queued(
                 car.pk,
-                Utils.convertSecondsToMS(car.taken_at),
+                Utils.compileSecondsTS(car.taken_at),
                 car.nearest(Media.BEST)!!,
                 car.media_type.toInt().toByte(),
                 u.username,
@@ -40,7 +40,7 @@ class Queuer(val api: Api) {
         ) else queue.add(
             Queued(
                 med.pk,
-                Utils.convertSecondsToMS(med.taken_at),
+                Utils.compileSecondsTS(med.taken_at),
                 med.nearest(Media.BEST)!!,
                 med.media_type.toInt().toByte(),
                 u.username,
