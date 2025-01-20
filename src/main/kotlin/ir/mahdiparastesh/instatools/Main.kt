@@ -91,6 +91,11 @@ q, quit                      Quit the program.
             }
 
             "m", "messages" -> {
+                api.call<Rest.InboxPage>(
+                    Api.Endpoint.INBOX.url.format(/*c.mm.dmInbox?.oldest_cursor ?:*/""),
+                    Rest.InboxPage::class,
+                ) { inbox ->
+                }
                 // TODO
             }
 

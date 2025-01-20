@@ -22,6 +22,16 @@ interface Rest {
         override val status: String
     ) : Rest
 
+    data class InboxPage(
+        val viewer: User,
+        val inbox: Message.Inbox,
+        val seq_id: String,
+        val snapshot_at_ms: Double, // milliseconds
+        val pending_requests_total: Double,
+        val has_pending_top_requests: Boolean,
+        override val status: String
+    ) : Rest
+
     /** Both following and followers receive this API. */
     data class Follow(
         val users: List<User>? = null,
@@ -45,16 +55,6 @@ interface Rest {
         val friendship_statuses: Map<String, User.FriendshipStatus>,
         override val status: String
     ) : Rest
-
-    /*data class InboxPage(
-        //val has_pending_top_requests: Boolean,
-        val inbox: Dm.Inbox,
-        //val pending_requests_total: Double,
-        //val seq_id: Double,
-        //val viewer: User,
-    ) : Rest()*/
-
-    //data class InboxThread(val thread: Dm.DmThread) : Rest()
 
     interface DynamicReelsList : Rest {
         //var broadcast: Array<Any?>? = null

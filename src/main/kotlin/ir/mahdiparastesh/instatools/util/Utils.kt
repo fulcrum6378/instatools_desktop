@@ -27,5 +27,8 @@ object Utils {
     }
 
     /** Converts a timestamp of seconds to a timestamp of millisecond. */
-    fun convertSecondsToMS(seconds: Double) = seconds.toLong() * 1000L
+    fun compileSecondsTS(seconds: Double) = seconds.toLong() * 1000L
+
+    /** Converts a timestamp of microseconds to a timestamp of millisecond. */
+    fun compileMicrosecondsTS(microseconds: Double) = microseconds.toLong() / 1000L
 }

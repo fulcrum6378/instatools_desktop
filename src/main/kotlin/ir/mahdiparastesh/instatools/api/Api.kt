@@ -110,24 +110,24 @@ class Api {
         ),*///const val taggedHash = "be13233562af2d229b008d2976b998b5"
 
         // Interactions (always use "?count=" for more accurate results)
-        FOLLOWERS("https://www.instagram.com/api/v1/friendships/%1\$s/followers/?count=200&max_id=%2\$s"),
+        /*FOLLOWERS("https://www.instagram.com/api/v1/friendships/%1\$s/followers/?count=200&max_id=%2\$s"),
         FOLLOWING("https://www.instagram.com/api/v1/friendships/%1\$s/following/?count=200&max_id=%2\$s"),
-        FRIENDSHIPS_MANY("https://www.instagram.com/api/v1/friendships/show_many/"), /*
-        // method = POST, `user_ids=<ids separated by ",">`, expect Rest$Friendships *//*
-        FRIENDSHIP("https://www.instagram.com/api/v1/friendships/show/%s/"), // GET */
+        FRIENDSHIPS_MANY("https://www.instagram.com/api/v1/friendships/show_many/"),
+        // method = POST, `user_ids=<ids separated by ",">`, expect Rest$Friendships
+        FRIENDSHIP("https://www.instagram.com/api/v1/friendships/show/%s/"),*/ // GET
 
-        //FOLLOW("https://www.instagram.com/api/v1/friendships/create/%s/"),
+        FOLLOW("https://www.instagram.com/api/v1/friendships/create/%s/"),
         UNFOLLOW("https://www.instagram.com/api/v1/friendships/destroy/%s/"),
-        /*MUTE("https://www.instagram.com/api/v1/friendships/mute_posts_or_story_from_follow/"),
+        MUTE("https://www.instagram.com/api/v1/friendships/mute_posts_or_story_from_follow/"),
         UNMUTE("https://www.instagram.com/api/v1/friendships/unmute_posts_or_story_from_follow/"),
         // method = POST, "target_posts_author_id=<USER_ID>" AND(using &)/OR "target_reel_author_id=<USER_ID>",
-        // expect Rest$Friendships*/
-        /*RESTRICT("https://www.instagram.com/api/v1/web/restrict_action/restrict/"),
+        // expect Rest$Friendships
+        RESTRICT("https://www.instagram.com/api/v1/web/restrict_action/restrict/"),
         UNRESTRICT("https://www.instagram.com/api/v1/web/restrict_action/unrestrict/"),
-        // method = POST, body = "target_user_id=<USER_ID>", expect "{"status":"ok"}" */
-        /*BLOCK("https://www.instagram.com/api/v1/web/friendships/%d/block/"),
+        // method = POST, body = "target_user_id=<USER_ID>", expect "{"status":"ok"}"
+        BLOCK("https://www.instagram.com/api/v1/web/friendships/%d/block/"),
         UNBLOCK("https://www.instagram.com/api/v1/web/friendships/%d/unblock/"),
-        // method = POST, expect "{"status":"ok"}" */
+        // method = POST, expect {"status":"ok"}
 
         // Saving
         SAVED("https://www.instagram.com/api/v1/feed/saved/posts/"),
