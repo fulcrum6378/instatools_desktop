@@ -2,20 +2,23 @@ package ir.mahdiparastesh.instatools
 
 import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.Context.direct
-import ir.mahdiparastesh.instatools.Context.queuer
+import ir.mahdiparastesh.instatools.Context.downloader
+import ir.mahdiparastesh.instatools.Context.exporter
 import ir.mahdiparastesh.instatools.Context.saved
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.GraphQl
-import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.api.Rest
-import ir.mahdiparastesh.instatools.job.Queuer
+import ir.mahdiparastesh.instatools.job.Downloader
+import ir.mahdiparastesh.instatools.job.Exporter
 import ir.mahdiparastesh.instatools.list.Direct
 import ir.mahdiparastesh.instatools.list.Saved
 import ir.mahdiparastesh.instatools.util.SimpleTasks
+import ir.mahdiparastesh.instatools.util.Utils
 
 object Context {
     val api: Api by lazy { Api() }
-    val queuer: Queuer by lazy { Queuer() }
+    val downloader: Downloader by lazy { Downloader() }
+    val exporter: Exporter by lazy { Exporter() }
     val saved: Saved by lazy { Saved() }
     val direct: Direct by lazy { Direct() }
 }
@@ -46,13 +49,17 @@ s, saved                     Continuously list your saved posts.
 m, messages                  List your direct message threads.
   m <NUMBER> {OPTIONS}       Export the thread in that index.
     -t, --type=<HTML,PDF,TXT>              File type of the output export
-    --all_media=<none|QUALITY>             Default settings for all media (e.g. --all_media=low)
-    --images=<none|QUALITY>                Default settings for all images (e.g. --images=low)
-    --videos=<none|thumb|QUALITY>          Default settings for all videos (e.g. --videos=thumb)
-    --posts=<none|QUALITY>                 Settings for shared posts (e.g. --posts=none)
-    --reels=<none|thumb|QUALITY>           Settings for shared reels (e.g. --reels=none)
-    --uploaded_images=<none|QUALITY>       Settings for directly uploaded images  (e.g. --uploaded_images=high)
-    --uploaded_videos=<none|thumb|QUALITY> Settings for directly uploaded videos  (e.g. --uploaded_videos=high)
+    --all-media=<no|QUALITY>             Default settings for all media (e.g. --all-media=low)
+    --images=<no|QUALITY>                Default settings for all images (e.g. --images=low)
+    --videos=<no|thumb|QUALITY>          Default settings for all videos (e.g. --videos=thumb)
+    --posts=<no|QUALITY>                 Settings for shared posts (e.g. --posts=no)
+    --reels=<no|thumb|QUALITY>           Settings for shared reels (e.g. --reels=no)
+    --story=<no|thumb|QUALITY>           Settings for shared stories and highlights (e.g. --story=no)
+    --uploaded-images=<no|QUALITY>       Settings for directly uploaded images  (e.g. --uploaded-images=high)
+    --uploaded-videos=<no|thumb|QUALITY> Settings for directly uploaded videos  (e.g. --uploaded-videos=high)
+    --voice=<no|yes>                     Whether voice messages should be downloaded (e.g. --voice=yes)
+    --min-date=<DATETIME>                Minimum date for messages to be exported (e.g. --min-date=2025-01-21)
+    --max-date=<DATETIME>                Minimum date for messages to be exported (e.g. --min-date=2024)
   m reset                    Forget the previously loaded thread and load them again. (update)
 p, profile <USER>            Get information about a user's profile. (e.g. p fulcrum6378)
 u, user <ID>                 Find a user's name using their unique Instagram REST ID number. (e.g. u 8337021434)
@@ -96,10 +103,17 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
             }
 
             "d", "download" -> if (a.size >= 2)
-                throw InvalidCommandException("Please enter a link after \"${a[0]}\"; like \"${a[0]} https://\"...")
+                throw InvalidCommandException(
+                    "Please enter a link after \"${a[0]}\"; like \"${a[0]} https://\"..."
+                )
             else if ("/p/" in a[1] || "/reel/" in a[1]) {
-                val opt = options(a.getOrNull(2))
-                SimpleTasks.handlePostLink(a[1], quality(opt?.get(Option.QUALITY.key)))
+                val opt = Utils.options(a.getOrNull(2)) { key ->
+                    when (key) {
+                        "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
+                        else -> null
+                    }
+                }
+                SimpleTasks.handlePostLink(a[1], Utils.quality(opt?.get(Option.QUALITY.key)))
             } else
                 throw InvalidCommandException("Only links to Instagram posts and reels are supported!")
 
@@ -113,8 +127,14 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                 }
 
                 else -> saved[a[1]]?.also { med ->
-                    val opt = options(a.getOrNull(2))
-                    queuer.enqueue(med, quality(opt?.get(Option.QUALITY.key)))
+                    val opt = Utils.options(a.getOrNull(2)) { key ->
+                        when (key) {
+                            "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
+                            "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
+                            else -> null
+                        }
+                    }
+                    downloader.download(med, Utils.quality(opt?.get(Option.QUALITY.key)))
                     if (opt?.contains(Option.UNSAVE.key) == true)
                         saved.saveUnsave(med, true)
                 }
@@ -126,9 +146,26 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                 "reset" -> direct.fetch(true)
 
                 else -> direct[a[1]]?.also { thread ->
-                    val opt = options(a.getOrNull(2))
-                    // TODO
-                    println(thread.exportFileName())
+                    val opt = Utils.options(a.getOrNull(2)) { key ->
+                        when (key) {
+                            "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
+                            "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
+                            "-t", "t", "--type", "-type", "type" -> Option.TYPE
+                            "--all-media", "-all-media", "all-media" -> Option.EXP_ALL_MEDIA
+                            "--images", "-images", "images", "--image", "-image", "image" -> Option.EXP_IMAGES
+                            "--videos", "-videos", "videos", "--video", "-video", "video" -> Option.EXP_VIDEOS
+                            "--posts", "-posts", "posts", "--post", "-post", "post" -> Option.EXP_POSTS
+                            "--reels", "-reels", "reels", "--reel", "-reel", "reel" -> Option.EXP_REELS
+                            "--story", "-story", "story", "--stories", "-stories", "stories" -> Option.EXP_STORY
+                            "--uploaded-images", "-uploaded-images", "uploaded-images" -> Option.EXP_UPLOADED_IMAGES
+                            "--uploaded-videos", "-uploaded-videos", "uploaded-videos" -> Option.EXP_UPLOADED_VIDEOS
+                            "--voice", "-voice", "voice" -> Option.EXP_VOICE
+                            "--min-date", "-min-date", "min-date" -> Option.EXP_MIN_DATE
+                            "--max-date", "-max-date", "max-date" -> Option.EXP_MAX_DATE
+                            else -> null
+                        }
+                    } ?: throw InvalidCommandException("Please specify options for the export.")
+                    exporter.enqueue(thread, opt)
                 }
             }
 
@@ -166,54 +203,24 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
     println("Good luck!")
 }
 
-class InvalidCommandException(message: String = "Invalid command!") :
-    IllegalArgumentException(message)
-
-private fun options(raw: String?): HashMap<String, String?>? {
-    if (raw == null) return null
-    val opt = hashMapOf<String, String?>()
-    for (kv in raw.split(" ")) {
-        val kvSplit = if ("=" !in kv) kv.split("=") else null
-        val k = kvSplit?.get(0) ?: kv
-
-        val addable: Option? = when (k) {
-            "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
-            "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
-            else -> null
-        }
-        if (addable == null)
-            throw InvalidCommandException("Unknown option \"$k\"!")
-        opt[addable.key] = kvSplit?.get(1)
-    }
-    return opt
-}
-
-private fun quality(value: String? = null): Float {
-    if (value == null) return Media.BEST
-    return when (value) {
-        "h", "high", "original" -> Media.BEST
-        "m", "medium", "med" -> Media.MEDIUM
-        "l", "low" -> Media.WORST
-        "x" -> try {
-            value.substring(1).toFloat()
-        } catch (_: NumberFormatException) {
-            throw InvalidCommandException("\"$value\" is not a valid number!")
-        }
-        "y" -> try {
-            -value.substring(1).toFloat()
-        } catch (_: NumberFormatException) {
-            throw InvalidCommandException("\"$value\" is not a valid number!")
-        }
-        else -> throw InvalidCommandException("Unknown quality \"$value\"!")
-    }
-}
-
 enum class Option(val key: String, val value: Any? = null) {
     QUALITY("q"),
     UNSAVE("u"),
+    TYPE("t"),
+
+    // exporting
+    EXP_ALL_MEDIA("all-media"),
+    EXP_IMAGES("images"),
+    EXP_VIDEOS("videos"),
+    EXP_POSTS("posts"),
+    EXP_REELS("reels"),
+    EXP_STORY("story"),
+    EXP_UPLOADED_IMAGES("uploaded-images"),
+    EXP_UPLOADED_VIDEOS("uploaded-videos"),
+    EXP_VOICE("voice"),
+    EXP_MIN_DATE("min-date"),
+    EXP_MAX_DATE("max-date"),
 }
 
-/*TO-DO
- *
- * [https://github.com/fulcrum6378/instatools/tree/master/app/src/kotlin/ir/mahdiparastesh/instatools]
- */
+class InvalidCommandException(message: String = "Invalid command!") :
+    IllegalArgumentException(message)

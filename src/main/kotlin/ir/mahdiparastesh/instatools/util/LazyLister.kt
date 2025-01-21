@@ -1,5 +1,7 @@
 package ir.mahdiparastesh.instatools.util
 
+import ir.mahdiparastesh.instatools.InvalidCommandException
+
 abstract class LazyLister<Item> {
     protected val list: ArrayList<Item> = arrayListOf()
     protected var cursor: String? = null
@@ -27,7 +29,6 @@ abstract class LazyLister<Item> {
     operator fun get(index: String): Item? = try {
         list[index.toInt() - 1]
     } catch (e: Exception) {
-        System.err.println("The number you entered is incorrect! (${e::class.simpleName})")
-        null
+        throw InvalidCommandException("The number you entered is incorrect! (${e::class.simpleName})")
     }
 }
