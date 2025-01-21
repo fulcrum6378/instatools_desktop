@@ -25,7 +25,7 @@ object Utils {
             val k = kvSplit?.get(0) ?: kv
             val addable: Option = selector(k)
                 ?: throw InvalidCommandException("Unknown option \"$k\"!")
-            opt[addable.key] = kvSplit?.get(1)
+            opt[addable.key] = kvSplit?.getOrNull(1)
         }
         return opt
     }

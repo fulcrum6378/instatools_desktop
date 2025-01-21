@@ -4,20 +4,21 @@ import com.google.gson.Gson
 import io.ktor.client.*
 import io.ktor.client.engine.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import ir.mahdiparastesh.instatools.util.Utils
 import java.io.File
 import java.io.FileInputStream
+import java.net.InetAddress
 import kotlin.reflect.KClass
 
 class Api {
     val client = HttpClient(CIO) {
         followRedirects = false
-        engine {
-            proxy = ProxyBuilder.http("http://127.0.0.1:8580/")
-        }
+        if (InetAddress.getLocalHost().hostName in arrayOf("CHIMAERA", "ANGELDUST"))
+            engine { proxy = ProxyBuilder.http("http://127.0.0.1:8580/") }
     }
     private var cookies = ""
 
@@ -49,6 +50,7 @@ class Api {
                 append("cookie", cookies)
             }
             if (body != null) setBody(body)
+            timeout { requestTimeoutMillis = 8000L }
         }
         val text = response.bodyAsText()
         if (System.getenv("debug") == "1")
@@ -68,6 +70,7 @@ class Api {
                 append("accept", "text/html")
                 append("cookie", cookies)
             }
+            timeout { requestTimeoutMillis = 10000L }
         }
         if (response.status == HttpStatusCode.OK)
             onSuccess(response.bodyAsText())
@@ -120,10 +123,12 @@ class Api {
         UNFOLLOW("https://www.instagram.com/api/v1/friendships/destroy/%s/"),
         MUTE("https://www.instagram.com/api/v1/friendships/mute_posts_or_story_from_follow/"),
         UNMUTE("https://www.instagram.com/api/v1/friendships/unmute_posts_or_story_from_follow/"),
+
         // method = POST, "target_posts_author_id=<USER_ID>" AND(using &)/OR "target_reel_author_id=<USER_ID>",
         // expect Rest$Friendships
         RESTRICT("https://www.instagram.com/api/v1/web/restrict_action/restrict/"),
         UNRESTRICT("https://www.instagram.com/api/v1/web/restrict_action/unrestrict/"),
+
         // method = POST, body = "target_user_id=<USER_ID>", expect "{"status":"ok"}"
         BLOCK("https://www.instagram.com/api/v1/web/friendships/%d/block/"),
         UNBLOCK("https://www.instagram.com/api/v1/web/friendships/%d/unblock/"),

@@ -1,10 +1,9 @@
 package ir.mahdiparastesh.instatools.job
 
 import ir.mahdiparastesh.instatools.InvalidCommandException
+import ir.mahdiparastesh.instatools.Option
 import ir.mahdiparastesh.instatools.api.Message
 import ir.mahdiparastesh.instatools.util.Queuer
-import ir.mahdiparastesh.instatools.Option
-import ir.mahdiparastesh.instatools.util.Utils
 import java.io.File
 
 /** Exports direct messages. */
@@ -34,14 +33,18 @@ class Exporter : Queuer<Exporter.Exportable>() {
             ),
         )
     }
-    
+
     private fun setting(value: String?): Float? {
         if (value in arrayOf("no", "n", "none")) return null
-        Utils.quality()
+        // Utils.quality() | thumb
+        // TODO
+        return null
     }
 
     private fun dateTime(value: String?): Long? {
         if (value == null) return null
+        // TODO
+        return null
     }
 
     override suspend fun handle(q: Exportable) {

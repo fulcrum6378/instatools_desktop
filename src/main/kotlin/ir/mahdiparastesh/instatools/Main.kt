@@ -1,5 +1,6 @@
 package ir.mahdiparastesh.instatools
 
+import io.ktor.client.engine.*
 import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.Context.direct
 import ir.mahdiparastesh.instatools.Context.downloader
@@ -35,8 +36,11 @@ Copyright © Mahdi Parastesh - All Rights Reserved.
 
     if (interactive) println(
         """
+>> List of settings:
+set cookies {PATH}           Load the required cookies from a path. (defaults to `./cookies.txt`)
+set proxy {URL}              Set an HTTP proxy (e.g. `http://127.0.0.1:8580/`)
+
 >> List of commands:
-c, cookies <PATH>            Load the required cookies from a path. (defaults to `./cookies.txt`)
 d, download <LINK> {OPTIONS} Download only a post or reel via its official link.
     -q, --quality=<QUALITY>  A valid quality value (listed at the bottom) (e.g. -q=high) (defaults to high)
 s, saved                     Continuously list your saved posts.
@@ -48,7 +52,7 @@ s, saved                     Continuously list your saved posts.
   s [r|resave] <NUMBER>      Save the post in that index AGAIN.
 m, messages                  List your direct message threads.
   m <NUMBER> {OPTIONS}       Export the thread in that index.
-    -t, --type=<HTML,PDF,TXT>              File type of the output export
+    -t, --type=<HTML,TXT>                File type of the output export
     --all-media=<no|QUALITY>             Default settings for all media (e.g. --all-media=low)
     --images=<no|QUALITY>                Default settings for all images (e.g. --images=low)
     --videos=<no|thumb|QUALITY>          Default settings for all videos (e.g. --videos=thumb)
@@ -95,11 +99,21 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
 
         when (a[0]) {
 
-            "c", "cookies" -> {
-                if (if (a.size > 1) api.loadCookies(a[1]) else api.loadCookies())
-                    println("Cookies loaded!")
-                else
-                    throw InvalidCommandException("Such a file doesn't exist!")
+            "set" -> when (a.getOrNull(1)) {
+                "cookies" -> {
+                    if (if (a.size > 2) api.loadCookies(a[2]) else api.loadCookies())
+                        println("Cookies loaded!")
+                    else
+                        throw InvalidCommandException("Such a file doesn't exist!")
+                }
+
+                "proxy" -> {
+                    api.client.engine.config.proxy =
+                        if (a.size > 2) ProxyBuilder.http(a[2]) else null
+                    println("Proxy = " + a[2])
+                }
+
+                null -> throw InvalidCommandException("Invalid setting!")
             }
 
             "d", "download" -> if (a.size >= 2)

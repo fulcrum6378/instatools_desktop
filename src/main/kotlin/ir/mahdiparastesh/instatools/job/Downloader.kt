@@ -1,5 +1,6 @@
 package ir.mahdiparastesh.instatools.job
 
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import ir.mahdiparastesh.instatools.Context.api
@@ -52,7 +53,14 @@ class Downloader : Queuer<Downloader.Queued>() {
         val fileName = q.fileName()
         val file = File(outputDir, fileName)
         // TODO if (f.exists())
-        val ba = api.client.get(q.url).bodyAsBytes()
+        val ba = api.client.get(q.url) {
+            timeout {
+                requestTimeoutMillis = when (q.type) {
+                    Media.Type.IMAGE.inDb -> 15000L
+                    else -> 120000L
+                }
+            }
+        }.bodyAsBytes()
         val fos = FileOutputStream(file)
         when (q.type) {
             Media.Type.IMAGE.inDb -> ExifRewriter().updateExifMetadataLossless(
@@ -77,8 +85,8 @@ class Downloader : Queuer<Downloader.Queued>() {
                         add(ExifTagConstants.EXIF_TAG_SITE, q.link)
                     }
                 }) // location data is currently not possible with edge post location.
-            // TODO metadata for videos
-            else -> fos.write(ba)
+
+            else -> fos.write(ba) // TODO metadata for videos
         }
         fos.close()
         println("Downloaded $fileName")

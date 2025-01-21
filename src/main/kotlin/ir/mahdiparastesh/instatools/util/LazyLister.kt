@@ -10,9 +10,10 @@ abstract class LazyLister<Item> {
     /** Remember always to call `super.fetch(reset)`. */
     open suspend fun fetch(reset: Boolean = false) {
         if (reset) {
+            cursor = null
             index = 1
-            list.clear()
         }
+        if (cursor == null) list.clear()
     }
 
     protected fun add(item: Item) {
