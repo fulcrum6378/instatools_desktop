@@ -12,7 +12,7 @@ import ir.mahdiparastesh.instatools.api.Rest
 object SimpleTasks {
 
     /** Resolves download URLs of desired posts or reels via their official links. */
-    suspend fun handlePostLink(link: String) {
+    suspend fun handlePostLink(link: String, idealSize: Float) {
         api.page(link) { html ->
             val data = RelayPrefetchedStreamCache.crawl(html) { // hashMapOf<String, Map<String, Any>>()
                 it.contains("PolarisPostRootQueryRelayPreloader")
@@ -23,7 +23,7 @@ object SimpleTasks {
             if ("PolarisPostRootQueryRelayPreloader" in data) {
                 @Suppress("UNCHECKED_CAST")
                 val medMap = (data["PolarisPostRootQueryRelayPreloader"]!!["items"] as List<Map<String, Any>>)[0]
-                queuer.enqueue(Gson().fromJson(Gson().toJson(medMap), Media::class.java), link)
+                queuer.enqueue(Gson().fromJson(Gson().toJson(medMap), Media::class.java), idealSize, link)
             } else if ("instagram://media?id=" in html) {
                 val medId = html.substringAfter("instagram://media?id=").substringBefore("\"")
                 if (System.getenv("debug") == "1")
@@ -32,7 +32,7 @@ object SimpleTasks {
                     Api.Endpoint.MEDIA_INFO.url.format(medId), Rest.LazyList::class,
                     typeToken = object : TypeToken<Rest.LazyList<Media>>() {}.type,
                 ) { singleItemList ->
-                    queuer.enqueue(singleItemList.items.first(), link)
+                    queuer.enqueue(singleItemList.items.first(), idealSize, link)
                 }
             } else
                 System.err.println("Shall we re-implement PageConfig?")

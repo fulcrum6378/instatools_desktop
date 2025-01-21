@@ -24,13 +24,13 @@ class Queuer {
     private val downloads = File("./downloads/")
 
     /** Enqueues a media to be downloaded. */
-    suspend fun enqueue(med: Media, link: String? = null) {
+    suspend fun enqueue(med: Media, idealSize: Float, link: String? = null) {
         val u = med.owner()
         if (med.carousel_media != null) for (car in med.carousel_media) queue.add(
             Queued(
                 car.pk,
                 Utils.compileSecondsTS(car.taken_at),
-                car.nearest(Media.BEST)!!,
+                car.nearest(idealSize)!!,
                 car.media_type.toInt().toByte(),
                 u.username,
                 med.caption!!.text,
@@ -41,7 +41,7 @@ class Queuer {
             Queued(
                 med.pk,
                 Utils.compileSecondsTS(med.taken_at),
-                med.nearest(Media.BEST)!!,
+                med.nearest(idealSize)!!,
                 med.media_type.toInt().toByte(),
                 u.username,
                 med.caption!!.text,

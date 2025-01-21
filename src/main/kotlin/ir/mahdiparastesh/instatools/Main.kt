@@ -6,6 +6,7 @@ import ir.mahdiparastesh.instatools.Context.queuer
 import ir.mahdiparastesh.instatools.Context.saved
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.GraphQl
+import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.api.Rest
 import ir.mahdiparastesh.instatools.job.Queuer
 import ir.mahdiparastesh.instatools.list.Direct
@@ -33,19 +34,36 @@ Copyright © Mahdi Parastesh - All Rights Reserved.
         """
 >> List of commands:
 c, cookies <PATH>            Load the required cookies from a path. (defaults to `./cookies.txt`)
-d, download <LINK>           Download only a post or reel via its official link.
+d, download <LINK> {OPTIONS} Download only a post or reel via its official link.
+    -q, --quality=<QUALITY>  A valid quality value (listed at the bottom) (e.g. -q=high) (defaults to high)
 s, saved                     Continuously list your saved posts.
-    s <NUMBER>               Download the post in that index.
-    s <NUMBER> [u|unsave]    Download + unsave the post in that index.
-    s reset                  Forget the previously loaded saved posts and load them again. (update)
-    s [u|unsave] <NUMBER>    Unsave the post in that index.
-    s [r|resave] <NUMBER>    Save the post in that index AGAIN.
+  s <NUMBER> {OPTIONS}       Download the post in that index.
+    -q, --quality=<QUALITY>  A valid quality value (listed at the bottom) (e.g. -q=high) (defaults to high)
+    -u, --unsave             Additionally unsave the post.
+  s reset                    Forget the previously loaded saved posts and load them again. (update)
+  s [u|unsave] <NUMBER>      Unsave the post in that index.
+  s [r|resave] <NUMBER>      Save the post in that index AGAIN.
 m, messages                  List your direct message threads.
-    m <NUMBER>               Export the thread in that index.
-    m reset                  Forget the previously loaded thread and load them again. (update)
+  m <NUMBER> {OPTIONS}       Export the thread in that index.
+    -t, --type=<HTML,PDF,TXT>              File type of the output export
+    --all_media=<none|QUALITY>             Default settings for all media (e.g. --all_media=low)
+    --images=<none|QUALITY>                Default settings for all images (e.g. --images=low)
+    --videos=<none|thumb|QUALITY>          Default settings for all videos (e.g. --videos=thumb)
+    --posts=<none|QUALITY>                 Settings for shared posts (e.g. --posts=none)
+    --reels=<none|thumb|QUALITY>           Settings for shared reels (e.g. --reels=none)
+    --uploaded_images=<none|QUALITY>       Settings for directly uploaded images  (e.g. --uploaded_images=high)
+    --uploaded_videos=<none|thumb|QUALITY> Settings for directly uploaded videos  (e.g. --uploaded_videos=high)
+  m reset                    Forget the previously loaded thread and load them again. (update)
 p, profile <USER>            Get information about a user's profile. (e.g. p fulcrum6378)
 u, user <ID>                 Find a user's name using their unique Instagram REST ID number. (e.g. u 8337021434)
 q, quit                      Quit the program.
+
+>> List of qualities:
+h, high                        Highest available quality (original)
+m, medium                      Medium quality
+l, low                         Lowest available quality (often thumbnail for images)
+x<NUMBER>                      Ideal width (e.g. x1000) (do NOT separate the number)
+y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the number)
 
     """.trimIndent()
     )
@@ -57,7 +75,7 @@ q, quit                      Quit the program.
     // execute commands
     var repeat = true
     var nothing = 0
-    while (repeat) {
+    while (repeat) try {
         val a: Array<String>
         if (interactive) {
             println("Type a command: ")
@@ -73,15 +91,17 @@ q, quit                      Quit the program.
             "c", "cookies" -> {
                 if (if (a.size > 1) api.loadCookies(a[1]) else api.loadCookies())
                     println("Cookies loaded!")
-                else System.err.println("Such a file doesn't exist!")
+                else
+                    throw InvalidCommandException("Such a file doesn't exist!")
             }
 
-            "d", "download" -> if (a.size != 2)
-                System.err.println("Please enter a link after \"${a[0]}\"; like \"${a[0]} https://\"...")
-            else if ("/p/" in a[1] || "/reel/" in a[1])
-                SimpleTasks.handlePostLink(a[1])
-            else
-                System.err.println("Only links to Instagram posts and reels are supported!")
+            "d", "download" -> if (a.size >= 2)
+                throw InvalidCommandException("Please enter a link after \"${a[0]}\"; like \"${a[0]} https://\"...")
+            else if ("/p/" in a[1] || "/reel/" in a[1]) {
+                val opt = options(a.getOrNull(2))
+                SimpleTasks.handlePostLink(a[1], quality(opt?.get(Option.QUALITY.key)))
+            } else
+                throw InvalidCommandException("Only links to Instagram posts and reels are supported!")
 
             "s", "saved" -> if (a.size == 1)
                 saved.fetch()
@@ -93,13 +113,10 @@ q, quit                      Quit the program.
                 }
 
                 else -> saved[a[1]]?.also { med ->
-                    queuer.enqueue(med)
-                    a.getOrNull(2)?.also { addition ->
-                        if (addition == "u" || addition == "unsave")
-                            saved.saveUnsave(med, true)
-                        else
-                            System.err.println("Unknown additional command \"$addition\"!")
-                    }
+                    val opt = options(a.getOrNull(2))
+                    queuer.enqueue(med, quality(opt?.get(Option.QUALITY.key)))
+                    if (opt?.contains(Option.UNSAVE.key) == true)
+                        saved.saveUnsave(med, true)
                 }
             }
 
@@ -109,12 +126,14 @@ q, quit                      Quit the program.
                 "reset" -> direct.fetch(true)
 
                 else -> direct[a[1]]?.also { thread ->
-                    println(thread.exportFileName()) // TODO
+                    val opt = options(a.getOrNull(2))
+                    // TODO
+                    println(thread.exportFileName())
                 }
             }
 
             "p", "profile" -> if (a.size != 2)
-                System.err.println("Invalid command!")
+                throw InvalidCommandException()
             else api.call<GraphQl>(
                 Api.Endpoint.PROFILE.url.format(a[1]), GraphQl::class
             ) { graphQl ->
@@ -123,7 +142,7 @@ q, quit                      Quit the program.
             }
 
             "u", "user" -> if (a.size != 2)
-                System.err.println("Invalid command!")
+                throw InvalidCommandException()
             else api.call<Rest.UserInfo>(
                 Api.Endpoint.INFO.url.format(a[1]), Rest.UserInfo::class
             ) { info -> println("@${info.user.username}") }
@@ -136,13 +155,62 @@ q, quit                      Quit the program.
                 else continue
             }
 
-            else -> System.err.println("Unknown command: ${a[0]}")
+            else -> throw InvalidCommandException("Unknown command: ${a[0]}")
         }
         if (a[0] != "") nothing = 0
+    } catch (e: InvalidCommandException) {
+        System.err.println(e)
     }
 
     api.client.close()
     println("Good luck!")
+}
+
+class InvalidCommandException(message: String = "Invalid command!") :
+    IllegalArgumentException(message)
+
+private fun options(raw: String?): HashMap<String, String?>? {
+    if (raw == null) return null
+    val opt = hashMapOf<String, String?>()
+    for (kv in raw.split(" ")) {
+        val kvSplit = if ("=" !in kv) kv.split("=") else null
+        val k = kvSplit?.get(0) ?: kv
+
+        val addable: Option? = when (k) {
+            "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
+            "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
+            else -> null
+        }
+        if (addable == null)
+            throw InvalidCommandException("Unknown option \"$k\"!")
+        opt[addable.key] = kvSplit?.get(1)
+    }
+    return opt
+}
+
+private fun quality(value: String? = null): Float {
+    if (value == null) return Media.BEST
+    return when (value) {
+        "h", "high", "original" -> Media.BEST
+        "m", "medium", "med" -> Media.MEDIUM
+        "l", "low" -> Media.WORST
+        "x" -> try {
+            value.substring(1).toFloat()
+        } catch (_: NumberFormatException) {
+            throw InvalidCommandException("\"$value\" is not a valid number!")
+        }
+        "y" -> try {
+            -value.substring(1).toFloat()
+        } catch (_: NumberFormatException) {
+            throw InvalidCommandException("\"$value\" is not a valid number!")
+        }
+        else -> throw InvalidCommandException("Unknown quality \"$value\"!")
+    }
+}
+
+enum class Option(val key: String, val value: Any? = null) {
+    QUALITY("q"),
+    UNSAVE("u"),
 }
 
 /*TO-DO
