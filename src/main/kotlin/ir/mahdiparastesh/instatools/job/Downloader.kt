@@ -16,6 +16,7 @@ import org.apache.http.client.methods.HttpGet
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.net.URI
 
 /** Downloads media and saves them. */
 class Downloader : Queuer<Downloader.Queued>() {
@@ -50,7 +51,8 @@ class Downloader : Queuer<Downloader.Queued>() {
 
     @Suppress("BlockingMethodInNonBlockingContext")
     override suspend fun handle(q: Queued) {
-        val fileName = q.fileName()
+        val extension = q.extension()
+        val fileName = q.fileName(extension)
         val file = File(outputDir, fileName)
         if (file.exists()) {
             println("File `${fileName}` already exists! Overwrite? (y / any)")
@@ -63,11 +65,10 @@ class Downloader : Queuer<Downloader.Queued>() {
 
             response = api.client.execute(
                 HttpGet(q.url).apply {
-                    config = RequestConfig.copy(config).setConnectTimeout(
+                    config = RequestConfig.custom().setConnectTimeout(
                         when (q.type) {
-                            Media.Type.IMAGE.inDb -> 15000
-                            // TODO PNG
-                            else -> 120000
+                            Media.Type.IMAGE.num -> 15000
+                            else -> 2 * 60000
                         }
                     ).build()
                 }
@@ -75,8 +76,8 @@ class Downloader : Queuer<Downloader.Queued>() {
         }
         val ba = response.entity.content.readAllBytes()
         val fos = FileOutputStream(file)
-        when (q.type) {
-            Media.Type.IMAGE.inDb -> ExifRewriter().updateExifMetadataLossless(
+        when (extension) {
+            "jpg" -> ExifRewriter().updateExifMetadataLossless(
                 ba, BufferedOutputStream(fos), ((Imaging.getMetadata(ba) as JpegImageMetadata?)?.exif?.outputSet
                     ?: TiffOutputSet()).apply {
                     orCreateRootDirectory.apply {
@@ -99,8 +100,7 @@ class Downloader : Queuer<Downloader.Queued>() {
                     }
                 }) // location data is currently not possible with edge post location.
 
-            // TODO PNG
-            else -> fos.write(ba) // TODO metadata for videos
+            else -> fos.write(ba) // TODO metadata for videos, exclude PNG and there could also be others
         }
         fos.close()
         println("Downloaded $fileName")
@@ -117,7 +117,9 @@ class Downloader : Queuer<Downloader.Queued>() {
         val link: String?,
         //val thumb: String?,
     ) {
-        fun fileName() = "${owner}_${Utils.fileDateTime(date)}_" +
-                "$id.${Media.Type.entries.find { it.inDb == type }!!.ext}"
+        fun fileName(ext: String) = "${owner}_${Utils.fileDateTime(date)}_$id.$ext"
+
+        fun extension() = URI(url).path.split(".").lastOrNull()
+            ?: Media.Type.entries.find { it.num == type }!!.ext
     }
 }

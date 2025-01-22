@@ -153,9 +153,9 @@ data class Media(
             .substringBefore("</BaseURL>")
     }
 
-    enum class Type(val ext: String, val inDb: Byte) {
-        IMAGE("jpg", 1),
-        VIDEO("mp4", 2),
-        AUDIO("m4a", 3),
+    enum class Type(val num: Byte, val ext: String) {
+        IMAGE(1, "jpg"), // could be PNG as well
+        VIDEO(2, "mp4"),
+        AUDIO(3, "m4a"),
     }
 }

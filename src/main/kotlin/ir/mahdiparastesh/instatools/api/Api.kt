@@ -14,11 +14,19 @@ import java.io.File
 import java.io.FileInputStream
 import java.net.InetAddress
 import java.net.URI
+import java.util.logging.Level
+import java.util.logging.Logger
 import kotlin.reflect.KClass
 
 class Api {
     var client: CloseableHttpClient = createClient()
     private var cookies = ""
+
+    init {
+        Logger.getLogger("org.apache.http.client").setLevel(
+            if (System.getenv("debug") == "1") Level.WARNING else Level.OFF
+        )
+    }
 
     fun createClient(
         timeout: Int = 10000, proxy: URI? = null
@@ -160,15 +168,4 @@ class Api {
 
         RAW_QUERY("https://www.instagram.com/graphql/query"),
     }
-
-    /*class Request(
-        url: String, private val post: Boolean = false, configurations: Request.() -> Unit
-    ) : HttpEntityEnclosingRequestBase() {
-        init {
-            uri = URI.create(url)
-            configurations()
-        }
-
-        override fun getMethod(): String = if (!post) "GET" else "POST"
-    }*/
 }

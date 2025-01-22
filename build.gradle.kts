@@ -1,13 +1,9 @@
 group = "ir.mahdiparastesh"
-version = "1.2.0"
+version = "1.2.5"
 
-plugins {
-    kotlin("jvm") version "2.1.0"
-}
+plugins { kotlin("jvm") version "2.1.0" }
 
-repositories {
-    mavenCentral()
-}
+repositories { mavenCentral() }
 
 dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
@@ -18,9 +14,7 @@ dependencies {
 }
 
 tasks.jar {
-    manifest {
-        attributes["Main-Class"] = "ir.mahdiparastesh.instatools.MainKt"
-    }
+    manifest { attributes["Main-Class"] = "ir.mahdiparastesh.instatools.MainKt" }
     from(configurations.runtimeClasspath.get().map(::zipTree))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
