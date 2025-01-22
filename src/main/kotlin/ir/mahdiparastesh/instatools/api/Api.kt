@@ -9,6 +9,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import ir.mahdiparastesh.instatools.util.Utils
+import org.apache.http.client.methods.HttpRequestBase
 import java.io.File
 import java.io.FileInputStream
 import java.net.InetAddress
@@ -20,7 +21,7 @@ class Api {
         if (InetAddress.getLocalHost().hostName in arrayOf("CHIMAERA", "ANGELDUST"))
             engine { proxy = ProxyBuilder.http("http://127.0.0.1:8580/") }
     }
-    private var cookies = ""
+    var cookies = ""
 
     fun loadCookies(path: String = "cookies.txt"): Boolean {
         val f = File(path)
@@ -89,7 +90,7 @@ class Api {
     enum class Endpoint(val url: String) {
         // Profiles
         PROFILE("https://www.instagram.com/api/v1/users/web_profile_info/?username=%s"),
-        INFO("https://www.instagram.com/api/v1/users/%s/info/"),
+        USER_INFO("https://www.instagram.com/api/v1/users/%s/info/"),
         SEARCH(
             "https://www.instagram.com/api/v1/web/search/topsearch/?context=blended&query=%s" +
                     "&include_reel=false&search_surface=web_top_search"

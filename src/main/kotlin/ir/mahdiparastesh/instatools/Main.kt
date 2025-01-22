@@ -195,7 +195,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
             "u", "user" -> if (a.size != 2)
                 throw InvalidCommandException()
             else api.call<Rest.UserInfo>(
-                Api.Endpoint.INFO.url.format(a[1]), Rest.UserInfo::class
+                Api.Endpoint.USER_INFO.url.format(a[1]), Rest.UserInfo::class
             ) { info -> println("@${info.user.username}") }
 
             "q", "quit" -> repeat = false
