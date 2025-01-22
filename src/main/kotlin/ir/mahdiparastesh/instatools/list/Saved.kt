@@ -1,7 +1,6 @@
 package ir.mahdiparastesh.instatools.list
 
 import com.google.gson.reflect.TypeToken
-import io.ktor.http.*
 import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.Media
@@ -35,7 +34,7 @@ class Saved : LazyLister<Media>() {
     suspend fun saveUnsave(med: Media, unsave: Boolean) {
         api.call<Rest.QuickResponse>(
             (if (unsave) Api.Endpoint.UNSAVE else Api.Endpoint.SAVE).url.format(med.pk),
-            Rest.QuickResponse::class, HttpMethod.Post
+            Rest.QuickResponse::class, true
         ) { rest ->
             if (rest.status == Utils.REST_STATUS_OK)
                 println("Successfully ${if (unsave) "unsaved" else "saved"} ${med.link()}")

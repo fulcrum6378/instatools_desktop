@@ -1,7 +1,7 @@
 package ir.mahdiparastesh.instatools.api
 
-import io.ktor.util.date.*
 import ir.mahdiparastesh.instatools.util.Utils
+import java.util.*
 
 @Suppress("PropertyName")
 data class Message(
@@ -60,7 +60,8 @@ data class Message(
     ) {
         fun title() = if (!is_group) users.getOrNull(0)?.visName() else thread_title
 
-        fun exportFileName() = "Exported ${title()}_${Utils.fileDateTime(getTimeMillis())}"
+        fun exportFileName() =
+            "Exported ${title()}_${Utils.fileDateTime(Calendar.getInstance().timeInMillis)}"
     }
 
     data class Reactions(val emojis: List<Emoji>)

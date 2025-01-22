@@ -1,6 +1,5 @@
 package ir.mahdiparastesh.instatools
 
-import io.ktor.client.engine.*
 import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.Context.direct
 import ir.mahdiparastesh.instatools.Context.downloader
@@ -15,6 +14,8 @@ import ir.mahdiparastesh.instatools.list.Direct
 import ir.mahdiparastesh.instatools.list.Saved
 import ir.mahdiparastesh.instatools.util.SimpleTasks
 import ir.mahdiparastesh.instatools.util.Utils
+import java.net.URI
+import java.net.URISyntaxException
 
 object Context {
     val api: Api by lazy { Api() }
@@ -38,7 +39,8 @@ Copyright © Mahdi Parastesh - All Rights Reserved.
         """
 >> List of settings:
 set cookies {PATH}           Load the required cookies from a path. (defaults to `./cookies.txt`)
-set proxy {URL}              Set an HTTP proxy (e.g. `http://127.0.0.1:8580/`)
+set proxy {URL}              Set an HTTP proxy (e.g. `set proxy http://127.0.0.1:8580/`)
+set timeout <seconds>        Set timeout for normal HTTP requests (not downloads) (e.g. `set timeout 10`)
 
 >> List of commands:
 d, download <LINK> {OPTIONS} Download only a post or reel via its official link.
@@ -107,10 +109,21 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                         throw InvalidCommandException("Such a file doesn't exist!")
                 }
 
-                "proxy" -> {
-                    api.client.engine.config.proxy =
-                        if (a.size > 2) ProxyBuilder.http(a[2]) else null
-                    println("Proxy = " + a[2])
+                "proxy" -> try {
+                    api.client = api.createClient(proxy = URI(a[2]))
+                } catch (_: URISyntaxException) {
+                    throw InvalidCommandException("Please enter a valid URI like the example above.")
+                }
+
+                "timeout" -> {
+                    val sec = try {
+                        a[2].toInt()
+                    } catch (_: NumberFormatException) {
+                        throw InvalidCommandException("Please enter a valid number.")
+                    }
+                    if (sec < 0)
+                        throw InvalidCommandException("Please enter a positive number.")
+                    api.client = api.createClient(timeout = sec * 1000)
                 }
 
                 null -> throw InvalidCommandException("Invalid setting!")
@@ -213,6 +226,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
         System.err.println(e)
     }
 
+    @Suppress("BlockingMethodInNonBlockingContext")
     api.client.close()
     println("Good luck!")
 }

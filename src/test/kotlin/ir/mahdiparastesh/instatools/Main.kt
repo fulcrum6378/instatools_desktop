@@ -8,7 +8,7 @@ import org.apache.http.impl.client.HttpClients
 import org.apache.http.util.EntityUtils
 
 suspend fun main() {
-    val cookies = Api().cookies
+    val cookies = ""//Api().cookies
     val client: CloseableHttpClient = HttpClients.custom()
         .setProxy(HttpHost("127.0.0.1", 8580, "http"))
         .build()

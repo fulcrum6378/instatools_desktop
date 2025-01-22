@@ -1,8 +1,5 @@
 package ir.mahdiparastesh.instatools.job
 
-import io.ktor.client.plugins.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.util.Queuer
@@ -13,6 +10,9 @@ import org.apache.commons.imaging.formats.jpeg.exif.ExifRewriter
 import org.apache.commons.imaging.formats.tiff.constants.ExifTagConstants
 import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants
 import org.apache.commons.imaging.formats.tiff.write.TiffOutputSet
+import org.apache.http.client.config.RequestConfig
+import org.apache.http.client.methods.CloseableHttpResponse
+import org.apache.http.client.methods.HttpGet
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -52,15 +52,28 @@ class Downloader : Queuer<Downloader.Queued>() {
     override suspend fun handle(q: Queued) {
         val fileName = q.fileName()
         val file = File(outputDir, fileName)
-        // TODO if (f.exists())
-        val ba = api.client.get(q.url) {
-            timeout {
-                requestTimeoutMillis = when (q.type) {
-                    Media.Type.IMAGE.inDb -> 15000L
-                    else -> 120000L
+        if (file.exists()) {
+            println("File `${fileName}` already exists! Overwrite? (y / any)")
+            if (readlnOrNull() !in arrayOf("y", "Y", "yes")) return
+        }
+        var response: CloseableHttpResponse? = null
+        while (response?.statusLine?.statusCode != 200) {
+            if (response != null)
+                println("Retrying for ${q.link}")
+
+            response = api.client.execute(
+                HttpGet(q.url).apply {
+                    config = RequestConfig.copy(config).setConnectTimeout(
+                        when (q.type) {
+                            Media.Type.IMAGE.inDb -> 15000
+                            // TODO PNG
+                            else -> 120000
+                        }
+                    ).build()
                 }
-            }
-        }.bodyAsBytes()
+            )
+        }
+        val ba = response.entity.content.readAllBytes()
         val fos = FileOutputStream(file)
         when (q.type) {
             Media.Type.IMAGE.inDb -> ExifRewriter().updateExifMetadataLossless(
@@ -86,6 +99,7 @@ class Downloader : Queuer<Downloader.Queued>() {
                     }
                 }) // location data is currently not possible with edge post location.
 
+            // TODO PNG
             else -> fos.write(ba) // TODO metadata for videos
         }
         fos.close()

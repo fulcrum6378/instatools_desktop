@@ -1,27 +1,38 @@
 package ir.mahdiparastesh.instatools.api
 
 import com.google.gson.Gson
-import io.ktor.client.*
-import io.ktor.client.engine.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
 import ir.mahdiparastesh.instatools.util.Utils
-import org.apache.http.client.methods.HttpRequestBase
+import org.apache.http.HttpHost
+import org.apache.http.client.config.RequestConfig
+import org.apache.http.client.methods.HttpGet
+import org.apache.http.client.methods.HttpPost
+import org.apache.http.entity.StringEntity
+import org.apache.http.impl.client.CloseableHttpClient
+import org.apache.http.impl.client.HttpClients
+import org.apache.http.util.EntityUtils
 import java.io.File
 import java.io.FileInputStream
 import java.net.InetAddress
+import java.net.URI
 import kotlin.reflect.KClass
 
 class Api {
-    val client = HttpClient(CIO) {
-        followRedirects = false
-        if (InetAddress.getLocalHost().hostName in arrayOf("CHIMAERA", "ANGELDUST"))
-            engine { proxy = ProxyBuilder.http("http://127.0.0.1:8580/") }
-    }
-    var cookies = ""
+    var client: CloseableHttpClient = createClient()
+    private var cookies = ""
+
+    fun createClient(
+        timeout: Int = 10000, proxy: URI? = null
+    ): CloseableHttpClient = HttpClients.custom().apply {
+        setDefaultRequestConfig(
+            RequestConfig.custom().setConnectTimeout(timeout).build()
+        )
+
+        if (proxy != null)
+            setProxy(HttpHost(proxy.host, proxy.port, proxy.scheme))
+        // special settings for our own computers
+        else if (InetAddress.getLocalHost().hostName in arrayOf("CHIMAERA", "ANGELDUST"))
+            setProxy(HttpHost("127.0.0.1", 8580, "http"))
+    }.build()
 
     fun loadCookies(path: String = "cookies.txt"): Boolean {
         val f = File(path)
@@ -30,53 +41,49 @@ class Api {
         return true
     }
 
-    @Suppress("UastIncorrectHttpHeaderInspection")
     suspend fun <JSON> call(
         url: String,
         clazz: KClass<*>,
-        httpMethod: HttpMethod = HttpMethod.Get,
+        isPost: Boolean = false,
         body: String? = null,
         typeToken: java.lang.reflect.Type? = null,
         onSuccess: suspend (json: JSON) -> Unit
     ) {
-        val response: HttpResponse = client.request(url) {
-            method = httpMethod
-            headers {
-                append("x-asbd-id", "129477")
-                if (cookies.contains("csrftoken=")) append(
+        val response = client.execute(
+            (if (isPost) HttpPost(url) else HttpGet(url)).apply {
+                addHeader("x-asbd-id", "129477")
+                if (cookies.contains("csrftoken=")) addHeader(
                     "x-csrftoken",
                     cookies.substringAfter("csrftoken=").substringBefore(";")
                 )
-                append("x-ig-app-id", "936619743392459")
-                append("cookie", cookies)
+                addHeader("x-ig-app-id", "936619743392459")
+                addHeader("cookie", cookies)
+                if (this is HttpPost) entity = StringEntity(body!!)
             }
-            if (body != null) setBody(body)
-            timeout { requestTimeoutMillis = 8000L }
-        }
-        val text = response.bodyAsText()
+        )
+        val text = EntityUtils.toString(response.entity)
         if (System.getenv("debug") == "1")
             println(text)
-        if (response.status == HttpStatusCode.OK)
+        if (response.statusLine.statusCode == 200)
             onSuccess(Gson().fromJson(text, typeToken ?: clazz.java) as JSON)
         else
-            error(response.status.value)
+            error(response.statusLine.statusCode)
     }
 
     suspend fun page(
         url: String,
         onSuccess: suspend (html: String) -> Unit
     ) {
-        val response: HttpResponse = client.get(url) {
-            headers {
-                append("accept", "text/html")
-                append("cookie", cookies)
+        val response = client.execute(
+            HttpGet(url).apply {
+                addHeader("accept", "text/html")
+                addHeader("cookie", cookies)
             }
-            timeout { requestTimeoutMillis = 10000L }
-        }
-        if (response.status == HttpStatusCode.OK)
-            onSuccess(response.bodyAsText())
+        )
+        if (response.statusLine.statusCode == 200)
+            onSuccess(EntityUtils.toString(response.entity))
         else
-            error(response.status.value)
+            error(response.statusLine.statusCode)
     }
 
     private fun error(status: Int) {
@@ -87,6 +94,7 @@ class Api {
         }
     }
 
+    @Suppress("unused")
     enum class Endpoint(val url: String) {
         // Profiles
         PROFILE("https://www.instagram.com/api/v1/users/web_profile_info/?username=%s"),
@@ -152,4 +160,15 @@ class Api {
 
         RAW_QUERY("https://www.instagram.com/graphql/query"),
     }
+
+    /*class Request(
+        url: String, private val post: Boolean = false, configurations: Request.() -> Unit
+    ) : HttpEntityEnclosingRequestBase() {
+        init {
+            uri = URI.create(url)
+            configurations()
+        }
+
+        override fun getMethod(): String = if (!post) "GET" else "POST"
+    }*/
 }
