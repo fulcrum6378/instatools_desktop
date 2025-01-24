@@ -1,16 +1,15 @@
 package ir.mahdiparastesh.instatools
 
 import ir.mahdiparastesh.instatools.Context.api
-import ir.mahdiparastesh.instatools.Context.direct
 import ir.mahdiparastesh.instatools.Context.downloader
 import ir.mahdiparastesh.instatools.Context.exporter
-import ir.mahdiparastesh.instatools.Context.saved
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.GraphQl
 import ir.mahdiparastesh.instatools.api.Rest
 import ir.mahdiparastesh.instatools.job.Downloader
 import ir.mahdiparastesh.instatools.job.Exporter
 import ir.mahdiparastesh.instatools.list.Direct
+import ir.mahdiparastesh.instatools.list.Posts
 import ir.mahdiparastesh.instatools.list.Saved
 import ir.mahdiparastesh.instatools.util.SimpleTasks
 import ir.mahdiparastesh.instatools.util.Utils
@@ -21,8 +20,6 @@ object Context {
     val api: Api by lazy { Api() }
     val downloader: Downloader by lazy { Downloader() }
     val exporter: Exporter by lazy { Exporter() }
-    val saved: Saved by lazy { Saved() }
-    val direct: Direct by lazy { Direct() }
 }
 
 suspend fun main(args: Array<String>) {
@@ -44,16 +41,17 @@ set timeout <seconds>        Set timeout for normal HTTP requests (not downloads
 
 >> List of commands:
 d, download <LINK> {OPTIONS} Download only a post or reel via its official link.
-    -q, --quality=<QUALITY>  A valid quality value (listed at the bottom) (e.g. -q=high) (defaults to high)
+    -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
+p, posts <USER>              List posts of a profile. (e.g. p fulcrum6378)
 s, saved                     Continuously list your saved posts.
-  s <NUMBER> {OPTIONS}       Download the post in that index.
-    -q, --quality=<QUALITY>  A valid quality value (listed at the bottom) (e.g. -q=high) (defaults to high)
-    -u, --unsave             Additionally unsave the post.
+  s <NUMBER(s)> {OPTIONS}    Download the post in that index.
+    -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
+    -u, --unsave                         Additionally unsave the post
   s reset                    Forget the previously loaded saved posts and load them again. (update)
   s [u|unsave] <NUMBER>      Unsave the post in that index.
   s [r|resave] <NUMBER>      Save the post in that index AGAIN.
 m, messages                  List your direct message threads.
-  m <NUMBER> {OPTIONS}       Export the thread in that index.
+  m <NUMBER(s)> {OPTIONS}    Export the thread in that index.
     -t, --type=<HTML,TXT>                File type of the output export
     --all-media=<no|QUALITY>             Default settings for all media (e.g. --all-media=low)
     --images=<no|QUALITY>                Default settings for all images (e.g. --images=low)
@@ -67,8 +65,7 @@ m, messages                  List your direct message threads.
     --min-date=<DATETIME>                Minimum date for messages to be exported (e.g. --min-date=2025-01-21)
     --max-date=<DATETIME>                Minimum date for messages to be exported (e.g. --min-date=2024)
   m reset                    Forget the previously loaded thread and load them again. (update)
-p, profile <USER>            Get information about a user's profile. (e.g. p fulcrum6378)
-u, user <ID>                 Find a user's name using their unique Instagram REST ID number. (e.g. u 8337021434)
+u, user <USERNAME|REST_ID>   Show details about an IG account. (e.g. u 8337021434)
 q, quit                      Quit the program.
 
 >> List of qualities:
@@ -80,10 +77,13 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
 
     """.trimIndent()
     )
-
+// TODO NUMBERs
     // preparations
     if (!api.loadCookies())
         System.err.println("No cookies found; insert cookies in `cookies.txt` right beside this JAR...")
+    val listPst: Posts by lazy { Posts() }
+    val listSvd: Saved by lazy { Saved() }
+    val listMsg: Direct by lazy { Direct() }
 
     // execute commands
     var repeat = true
@@ -144,16 +144,22 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
             } else
                 throw InvalidCommandException("Only links to Instagram posts and reels are supported!")
 
-            "s", "saved" -> if (a.size == 1)
-                saved.fetch()
-            else when (a[1]) {
-                "reset" -> saved.fetch(true)
+            "p", "profile" -> if (a.size != 2)
+                throw InvalidCommandException()
+            else {
 
-                "u", "unsave", "r", "resave" -> saved[a[2]]?.also { med ->
-                    saved.saveUnsave(med, a[1] == "u" || a[1] == "unsave")
+            }
+
+            "s", "saved" -> if (a.size == 1)
+                listSvd.fetch()
+            else when (a[1]) {
+                "reset" -> listSvd.fetch(true)
+
+                "u", "unsave", "r", "resave" -> listSvd[a[2]]?.also { med ->
+                    listSvd.saveUnsave(med, a[1] == "u" || a[1] == "unsave")
                 }
 
-                else -> saved[a[1]]?.also { med ->
+                else -> listSvd[a[1]]?.also { med ->
                     val opt = Utils.options(a.getOrNull(2)) { key ->
                         when (key) {
                             "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
@@ -163,16 +169,16 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                     }
                     downloader.download(med, Utils.quality(opt?.get(Option.QUALITY.key)))
                     if (opt?.contains(Option.UNSAVE.key) == true)
-                        saved.saveUnsave(med, true)
+                        listSvd.saveUnsave(med, true)
                 }
             }
 
             "m", "messages" -> if (a.size == 1)
-                direct.fetch()
+                listMsg.fetch()
             else when (a[1]) {
-                "reset" -> direct.fetch(true)
+                "reset" -> listMsg.fetch(true)
 
-                else -> direct[a[1]]?.also { thread ->
+                else -> listMsg[a[1]]?.also { thread ->
                     val opt = Utils.options(a.getOrNull(2)) { key ->
                         when (key) {
                             "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
@@ -196,20 +202,25 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                 }
             }
 
-            "p", "profile" -> if (a.size != 2)
-                throw InvalidCommandException()
-            else api.call<GraphQl>(
-                Api.Endpoint.PROFILE.url.format(a[1]), GraphQl::class
-            ) { graphQl ->
-                val u = graphQl.data?.user ?: return@call
-                println(u.id)
-            }
-
             "u", "user" -> if (a.size != 2)
                 throw InvalidCommandException()
-            else api.call<Rest.UserInfo>(
-                Api.Endpoint.USER_INFO.url.format(a[1]), Rest.UserInfo::class
-            ) { info -> println("@${info.user.username}") }
+            else {
+                val user = try {
+                    val restId = a[1].toInt()
+                    api.call<Rest.UserInfo>(
+                        Api.Endpoint.USER_INFO.url.format(a[1]), Rest.UserInfo::class
+                    ) { info -> println("@${info.user.username}") }
+                } catch (_: NumberFormatException) {
+
+                }
+
+                api.call<GraphQl>(
+                    Api.Endpoint.PROFILE.url.format(a[1]), GraphQl::class
+                ) { graphQl ->
+                    val u = graphQl.data?.user ?: return@call
+                    println(u.id)
+                }
+            }
 
             "q", "quit" -> repeat = false
 
