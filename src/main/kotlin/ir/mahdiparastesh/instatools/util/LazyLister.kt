@@ -8,7 +8,7 @@ abstract class LazyLister<Item> {
     protected var index: Int = 1
 
     /** Remember always to call `super.fetch(reset)`. */
-    open suspend fun fetch(reset: Boolean = false) {
+    open fun fetch(reset: Boolean = false) {
         if (reset) {
             cursor = null
             index = 1
@@ -27,8 +27,20 @@ abstract class LazyLister<Item> {
         println("End of list.")
     }
 
-    operator fun get(index: String): Item? = try {
-        list[index.toInt() - 1]
+    operator fun get(index: String): List<Item>? = try {
+        val arr = arrayListOf<Item>()
+        var spd: String
+        for (separated in index.split(",")) {
+            spd = separated.trim()
+            if ("-" !in spd)
+                arr.add(list[spd.toInt() - 1])
+            else {
+                val range = spd.split("-")
+                for (r in range.first().trim().toInt()..range.last().trim().toInt())
+                    arr.add(list[r])
+            }
+        }
+        arr
     } catch (e: Exception) {
         throw InvalidCommandException("The number you entered is incorrect! (${e::class.simpleName})")
     }

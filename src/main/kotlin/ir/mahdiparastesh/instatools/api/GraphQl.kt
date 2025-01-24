@@ -23,7 +23,7 @@ class GraphQl(
         //val toast_content_on_load: Any?
     )*/
 
-    class User(
+    /*class User(
         //val ai_agent_type: Any?,
         //val biography: String?,
         //val bio_links: List<Any>,
@@ -85,16 +85,14 @@ class GraphQl(
         //val transparency_product: Any?,
         val username: String,
         //val connected_fb_page: Any?,
-        //val pronouns: Array<String>,
+        //val pronouns: List<String>,
         val edge_owner_to_timeline_media: EdgeList, // Main posts
     ) {
-        fun hdPhoto() = profile_pic_url_hd ?: profile_pic_url
-
         fun edges() = edge_owner_to_timeline_media.edges
 
         fun hasMore(): Boolean =
             edge_owner_to_timeline_media.let { it.edges.size < it.count.toInt() }
-    }
+    }*/
 
     /*open class EdgeFollow(val count: Double) {
         override fun toString(): String = when {

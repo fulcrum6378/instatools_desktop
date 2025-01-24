@@ -16,13 +16,14 @@ import org.apache.http.client.methods.HttpGet
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.net.URI
 
 /** Downloads media and saves them. */
 class Downloader : Queuer<Downloader.Queued>() {
-    override val outputDir = File("./downloads/")
+    override val outputDir = File("./Downloads/")
 
-    suspend fun download(med: Media, idealSize: Float, link: String? = null) {
+    fun download(med: Media, idealSize: Float, link: String? = null) {
         val u = med.owner()
         if (med.carousel_media != null) for (car in med.carousel_media) enqueue(
             Queued(
@@ -49,8 +50,7 @@ class Downloader : Queuer<Downloader.Queued>() {
         )
     }
 
-    @Suppress("BlockingMethodInNonBlockingContext")
-    override suspend fun handle(q: Queued) {
+    override fun handle(q: Queued) {
         val extension = q.extension()
         val fileName = q.fileName(extension)
         val file = File(outputDir, fileName)
@@ -63,16 +63,19 @@ class Downloader : Queuer<Downloader.Queued>() {
             if (response != null)
                 println("Retrying for ${q.link}")
 
-            response = api.client.execute(
-                HttpGet(q.url).apply {
-                    config = RequestConfig.custom().setConnectTimeout(
-                        when (q.type) {
-                            Media.Type.IMAGE.num -> 15000
-                            else -> 2 * 60000
-                        }
-                    ).build()
-                }
-            )
+            val request = HttpGet(q.url).apply {
+                config = RequestConfig.custom().setConnectTimeout(
+                    when (q.type) {
+                        Media.Type.IMAGE.num -> 15000
+                        else -> 2 * 60000
+                    }
+                ).build()
+            }
+            try {
+                response = api.client.execute(request)
+            } catch (e: IOException) {
+                throw e  // FIXME
+            }
         }
         val ba = response.entity.content.readAllBytes()
         val fos = FileOutputStream(file)

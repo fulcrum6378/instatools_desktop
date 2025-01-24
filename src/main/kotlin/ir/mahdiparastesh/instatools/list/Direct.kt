@@ -8,11 +8,11 @@ import ir.mahdiparastesh.instatools.util.LazyLister
 
 class Direct : LazyLister<Message.DmThread>() {
 
-    override suspend fun fetch(reset: Boolean) {
+    override fun fetch(reset: Boolean) {
         super.fetch(reset)
         api.call<Rest.InboxPage>(
             Api.Endpoint.INBOX.url.format(cursor ?: ""), Rest.InboxPage::class,
-        ) { page ->
+        ).also { page ->
             for (thread in page.inbox.threads) {
                 println("$index. ${thread.title()}")
                 add(thread)

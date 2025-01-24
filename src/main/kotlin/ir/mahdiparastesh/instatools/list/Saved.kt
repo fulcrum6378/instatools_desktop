@@ -10,12 +10,12 @@ import ir.mahdiparastesh.instatools.util.Utils
 
 class Saved : LazyLister<Media>() {
 
-    override suspend fun fetch(reset: Boolean) {
+    override fun fetch(reset: Boolean) {
         super.fetch(reset)
         api.call<Rest.LazyList<Rest.SavedItem>>(
             Api.Endpoint.SAVED.url + (if (cursor != null && !reset) "?max_id=$cursor" else ""),
             Rest.LazyList::class, typeToken = object : TypeToken<Rest.LazyList<Rest.SavedItem>>() {}.type,
-        ) { lazyList ->
+        ).also { lazyList ->
             for (i in lazyList.items) {
                 println(
                     "$index. ${i.media.link()} - @${i.media.owner().username} : " +
@@ -31,15 +31,14 @@ class Saved : LazyLister<Media>() {
     }
 
     /** Saves or unsaves posts. */
-    suspend fun saveUnsave(med: Media, unsave: Boolean) {
-        api.call<Rest.QuickResponse>(
+    fun saveUnsave(med: Media, unsave: Boolean) {
+        val restStatus = api.call<Rest.QuickResponse>(
             (if (unsave) Api.Endpoint.UNSAVE else Api.Endpoint.SAVE).url.format(med.pk),
             Rest.QuickResponse::class, true
-        ) { rest ->
-            if (rest.status == Utils.REST_STATUS_OK)
-                println("Successfully ${if (unsave) "unsaved" else "saved"} ${med.link()}")
-            else
-                System.err.println("Couldn't ${if (unsave) "unsave" else "save"} this post!")
-        }
+        ).status
+        if (restStatus == Utils.REST_STATUS_OK)
+            println("Successfully ${if (unsave) "unsaved" else "saved"} ${med.link()}")
+        else
+            System.err.println("Couldn't ${if (unsave) "unsave" else "save"} this post!")
     }
 }

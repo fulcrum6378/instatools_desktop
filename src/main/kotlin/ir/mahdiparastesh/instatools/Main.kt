@@ -11,6 +11,7 @@ import ir.mahdiparastesh.instatools.job.Exporter
 import ir.mahdiparastesh.instatools.list.Direct
 import ir.mahdiparastesh.instatools.list.Posts
 import ir.mahdiparastesh.instatools.list.Saved
+import ir.mahdiparastesh.instatools.list.Tagged
 import ir.mahdiparastesh.instatools.util.SimpleTasks
 import ir.mahdiparastesh.instatools.util.Utils
 import java.net.URI
@@ -22,7 +23,7 @@ object Context {
     val exporter: Exporter by lazy { Exporter() }
 }
 
-suspend fun main(args: Array<String>) {
+fun main(args: Array<String>) {
     val interactive = args.isEmpty()
     println(
         """
@@ -40,18 +41,17 @@ set proxy {URL}              Set an HTTP proxy (e.g. `set proxy http://127.0.0.1
 set timeout <seconds>        Set timeout for normal HTTP requests (not downloads) (e.g. `set timeout 10`)
 
 >> List of commands:
-d, download <LINK> {OPTIONS} Download only a post or reel via its official link.
+d, download <LINK> {OPTIONS}   Download only a post or reel via its official link.
     -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
-p, posts <USER>              List posts of a profile. (e.g. p fulcrum6378)
-s, saved                     Continuously list your saved posts.
-  s <NUMBER(s)> {OPTIONS}    Download the post in that index.
+s, saved                       Continuously list your saved posts.
+  s <NUMBER(s)> {OPTIONS}      Download the post in that index.
     -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
     -u, --unsave                         Additionally unsave the post
-  s reset                    Forget the previously loaded saved posts and load them again. (update)
-  s [u|unsave] <NUMBER>      Unsave the post in that index.
-  s [r|resave] <NUMBER>      Save the post in that index AGAIN.
-m, messages                  List your direct message threads.
-  m <NUMBER(s)> {OPTIONS}    Export the thread in that index.
+  s reset                      Forget the previously loaded saved posts and load them again.
+  s [u|unsave] <NUMBER>        Unsave the post in that index.
+  s [r|resave] <NUMBER>        Save the post in that index AGAIN.
+m, messages                    List your direct message threads.
+  m <NUMBER(s)> {OPTIONS}      Export the thread in that index.
     -t, --type=<HTML,TXT>                File type of the output export
     --all-media=<no|QUALITY>             Default settings for all media (e.g. --all-media=low)
     --images=<no|QUALITY>                Default settings for all images (e.g. --images=low)
@@ -64,9 +64,13 @@ m, messages                  List your direct message threads.
     --voice=<no|yes>                     Whether voice messages should be downloaded (e.g. --voice=yes)
     --min-date=<DATETIME>                Minimum date for messages to be exported (e.g. --min-date=2025-01-21)
     --max-date=<DATETIME>                Minimum date for messages to be exported (e.g. --min-date=2024)
-  m reset                    Forget the previously loaded thread and load them again. (update)
-u, user <USERNAME|REST_ID>   Show details about an IG account. (e.g. u 8337021434)
-q, quit                      Quit the program.
+  m reset                      Forget the previously loaded threads and load them again.
+u, user <USER|REST_ID>         Show details about an IG account. (e.g. u 8337021434)
+p, posts <USERNAME>            List main posts of a profile. (e.g. p fulcrum6378)
+  p reset                      Forget the previously loaded main posts and load them again.
+t, tagged <USERNAME>           List tagged posts of a profile. (e.g. t fulcrum6378)
+  t reset                      Forget the previously loaded tagged posts and load them again.
+q, quit                        Quit the program.
 
 >> List of qualities:
 h, high                        Highest available quality (original)
@@ -77,13 +81,14 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
 
     """.trimIndent()
     )
-// TODO NUMBERs
+
     // preparations
     if (!api.loadCookies())
         System.err.println("No cookies found; insert cookies in `cookies.txt` right beside this JAR...")
-    val listPst: Posts by lazy { Posts() }
     val listSvd: Saved by lazy { Saved() }
     val listMsg: Direct by lazy { Direct() }
+    val listPst: Posts by lazy { Posts() }
+    val listTag: Tagged by lazy { Tagged() }
 
     // execute commands
     var repeat = true
@@ -144,22 +149,16 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
             } else
                 throw InvalidCommandException("Only links to Instagram posts and reels are supported!")
 
-            "p", "profile" -> if (a.size != 2)
-                throw InvalidCommandException()
-            else {
-
-            }
-
             "s", "saved" -> if (a.size == 1)
                 listSvd.fetch()
             else when (a[1]) {
                 "reset" -> listSvd.fetch(true)
 
-                "u", "unsave", "r", "resave" -> listSvd[a[2]]?.also { med ->
+                "u", "unsave", "r", "resave" -> listSvd[a[2]]?.forEach { med ->
                     listSvd.saveUnsave(med, a[1] == "u" || a[1] == "unsave")
                 }
 
-                else -> listSvd[a[1]]?.also { med ->
+                else -> listSvd[a[1]]?.forEach { med ->
                     val opt = Utils.options(a.getOrNull(2)) { key ->
                         when (key) {
                             "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
@@ -178,7 +177,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
             else when (a[1]) {
                 "reset" -> listMsg.fetch(true)
 
-                else -> listMsg[a[1]]?.also { thread ->
+                else -> listMsg[a[1]]?.forEach { thread ->
                     val opt = Utils.options(a.getOrNull(2)) { key ->
                         when (key) {
                             "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
@@ -198,28 +197,42 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                             else -> null
                         }
                     } ?: throw InvalidCommandException("Please specify options for the export.")
-                    exporter.enqueue(thread, opt)
+                    exporter.export(thread, opt)
                 }
             }
 
             "u", "user" -> if (a.size != 2)
                 throw InvalidCommandException()
+            else try {
+                a[1].toLong()
+                api.call<Rest.UserInfo>(Api.Endpoint.USER_INFO.url.format(a[1]), Rest.UserInfo::class).user
+            } catch (_: NumberFormatException) {
+                api.call<GraphQl>(Api.Endpoint.PROFILE.url.format(a[1]), GraphQl::class).data!!.user!!
+            }.also { u ->
+                println(
+                    """
+Full name:        ${u.full_name}
+Username:         @${u.username}
+Unique REST ID:   ${u.id()}
+Pronouns:         ${u.pronouns?.joinToString(", ")}
+Is private?       ${if (u.is_private == true) "Yes" else "No"}
+Bio:
+${u.biography}
+
+                """.trimIndent()
+                )
+            }
+
+            "p", "posts" -> if (a.size != 2)
+                throw InvalidCommandException()
             else {
-                val user = try {
-                    val restId = a[1].toInt()
-                    api.call<Rest.UserInfo>(
-                        Api.Endpoint.USER_INFO.url.format(a[1]), Rest.UserInfo::class
-                    ) { info -> println("@${info.user.username}") }
-                } catch (_: NumberFormatException) {
+                // TODO listPst, reset
+            }
 
-                }
-
-                api.call<GraphQl>(
-                    Api.Endpoint.PROFILE.url.format(a[1]), GraphQl::class
-                ) { graphQl ->
-                    val u = graphQl.data?.user ?: return@call
-                    println(u.id)
-                }
+            "t", "tagged" -> if (a.size != 2)
+                throw InvalidCommandException()
+            else {
+                // TODO listTag, reset
             }
 
             "q", "quit" -> repeat = false
@@ -233,11 +246,13 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
             else -> throw InvalidCommandException("Unknown command: ${a[0]}")
         }
         if (a[0] != "") nothing = 0
+
     } catch (e: InvalidCommandException) {
-        System.err.println(e)
+        System.err.println(e.message)
+    } catch (e: Api.FailureException) {
+        System.err.println(e.message)
     }
 
-    @Suppress("BlockingMethodInNonBlockingContext")
     api.client.close()
     println("Good luck!")
 }
@@ -261,5 +276,5 @@ enum class Option(val key: String, val value: Any? = null) {
     EXP_MAX_DATE("max-date"),
 }
 
-class InvalidCommandException(message: String = "Invalid command!") :
-    IllegalArgumentException(message)
+class InvalidCommandException(msg: String = "Invalid command!") :
+    IllegalArgumentException(msg)

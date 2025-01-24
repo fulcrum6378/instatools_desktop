@@ -1,7 +1,8 @@
 package ir.mahdiparastesh.instatools.util
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 import java.io.File
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -10,12 +11,12 @@ abstract class Queuer<Item> {
     private val queue = CopyOnWriteArrayList<Item>()
     protected abstract val outputDir: File?
 
-    protected suspend fun enqueue(item: Item) {
+    protected fun enqueue(item: Item) {
         queue.add(item)
-        if (!active) withContext(Dispatchers.IO) { start() }
+        if (!active) CoroutineScope(Dispatchers.IO).launch { start() }
     }
 
-    private suspend fun start() {
+    private fun start() {
         active = true
         if (outputDir?.isDirectory == false) outputDir?.mkdir()
         while (queue.isNotEmpty()) {
@@ -25,5 +26,5 @@ abstract class Queuer<Item> {
         active = false
     }
 
-    protected abstract suspend fun handle(q: Item)
+    protected abstract fun handle(q: Item)
 }

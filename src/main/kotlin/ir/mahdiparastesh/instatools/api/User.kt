@@ -2,15 +2,27 @@ package ir.mahdiparastesh.instatools.api
 
 @Suppress("PropertyName")
 data class User(
+    val bio_links: List<BioLink>?,
+    val biography: String?,
     val friendship_status: Map<String, Any?>?,
     val full_name: String?,
-    val id: String,
+    val hd_profile_pic_versions: List<Media.Version>?,
+    val id: String?,
     val is_private: Boolean?,
     val is_unpublished: Boolean?,
-    val pk: String,
+    val pk: String?,
     val profile_pic_url: String,
+    val profile_pic_url_hd: String?,
+    val pronouns: List<String>?,
     val username: String,
 ) {
+
+    fun visName() = full_name?.ifBlank { username } ?: username
+
+    fun id(): String = id ?: pk!!
+
+
+    data class BioLink(val title: String, val url: String)
 
     data class FriendshipStatus(
         //val blocking: Boolean?, // only in mute/unmute and show(one)
@@ -32,6 +44,4 @@ data class User(
         //val status: Boolean?, // as Rest, only in show(one)
         //val subscribed: Boolean?, // only in mute/unmute and show(one)
     )
-
-    fun visName() = full_name?.ifBlank { username } ?: username
 }

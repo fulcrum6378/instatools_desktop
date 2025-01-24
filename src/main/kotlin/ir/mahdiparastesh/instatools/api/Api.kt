@@ -12,6 +12,7 @@ import org.apache.http.impl.client.HttpClients
 import org.apache.http.util.EntityUtils
 import java.io.File
 import java.io.FileInputStream
+import java.io.IOException
 import java.net.InetAddress
 import java.net.URI
 import java.util.logging.Level
@@ -49,57 +50,53 @@ class Api {
         return true
     }
 
-    suspend fun <JSON> call(
+    fun <JSON> call(
         url: String,
         clazz: KClass<*>,
         isPost: Boolean = false,
         body: String? = null,
-        typeToken: java.lang.reflect.Type? = null,
-        onSuccess: suspend (json: JSON) -> Unit
-    ) {
-        val response = client.execute(
-            (if (isPost) HttpPost(url) else HttpGet(url)).apply {
-                addHeader("x-asbd-id", "129477")
-                if (cookies.contains("csrftoken=")) addHeader(
-                    "x-csrftoken",
-                    cookies.substringAfter("csrftoken=").substringBefore(";")
-                )
-                addHeader("x-ig-app-id", "936619743392459")
-                addHeader("cookie", cookies)
-                if (this is HttpPost && body != null) entity = StringEntity(body)
-            }
-        )
+        typeToken: java.lang.reflect.Type? = null
+    ): JSON {
+        val request = (if (isPost) HttpPost(url) else HttpGet(url)).apply {
+            addHeader("x-asbd-id", "129477")
+            if (cookies.contains("csrftoken=")) addHeader(
+                "x-csrftoken",
+                cookies.substringAfter("csrftoken=").substringBefore(";")
+            )
+            addHeader("x-ig-app-id", "936619743392459")
+            addHeader("cookie", cookies)
+            if (this is HttpPost && body != null) entity = StringEntity(body)
+        }
+        val response = try {
+            client.execute(request)
+        } catch (e: IOException) {
+            throw FailureException(-1)
+        }
+
         val text = EntityUtils.toString(response.entity)
         if (System.getenv("debug") == "1")
             println(text)
-        if (response.statusLine.statusCode == 200)
-            onSuccess(Gson().fromJson(text, typeToken ?: clazz.java) as JSON)
+        if (response.statusLine.statusCode != 200)
+            throw FailureException(response.statusLine.statusCode)
         else
-            error(response.statusLine.statusCode)
+            return Gson().fromJson(text, typeToken ?: clazz.java) as JSON
     }
 
-    suspend fun page(
-        url: String,
-        onSuccess: suspend (html: String) -> Unit
-    ) {
-        val response = client.execute(
-            HttpGet(url).apply {
-                addHeader("accept", "text/html")
-                addHeader("cookie", cookies)
-            }
-        )
-        if (response.statusLine.statusCode == 200)
-            onSuccess(EntityUtils.toString(response.entity))
-        else
-            error(response.statusLine.statusCode)
-    }
-
-    private fun error(status: Int) {
-        when (status) {
-            302 -> System.err.println("Found redirection!")
-            429 -> System.err.println("Too many requests!")
-            else -> System.err.println("HTTP error code $status!")
+    fun page(url: String): String {
+        val request = HttpGet(url).apply {
+            addHeader("accept", "text/html")
+            addHeader("cookie", cookies)
         }
+        val response = try {
+            client.execute(request)
+        } catch (e: IOException) {
+            throw FailureException(-1)
+        }
+
+        if (response.statusLine.statusCode != 200)
+            throw FailureException(response.statusLine.statusCode)
+        else
+            return EntityUtils.toString(response.entity)
     }
 
     @Suppress("unused")
@@ -168,4 +165,13 @@ class Api {
 
         RAW_QUERY("https://www.instagram.com/graphql/query"),
     }
+
+    class FailureException(status: Int) : IllegalStateException(
+        "API ERROR: " + when (status) {
+            -1 -> "Couldn't connect to Instagram!"
+            302 -> "Found redirection!"
+            429 -> "Too many requests!"
+            else -> "HTTP error code $status!"
+        }
+    )
 }

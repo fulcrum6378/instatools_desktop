@@ -8,9 +8,9 @@ import java.io.File
 
 /** Exports direct messages. */
 class Exporter : Queuer<Exporter.Exportable>() {
-    override val outputDir = File("./direct/")
+    override val outputDir = File("./Messages/")
 
-    suspend fun enqueue(thread: Message.DmThread, opt: HashMap<String, String?>) {
+    fun export(thread: Message.DmThread, opt: HashMap<String, String?>) {
         val allMedia = opt[Option.EXP_ALL_MEDIA.key]
         enqueue(
             Exportable(
@@ -47,7 +47,7 @@ class Exporter : Queuer<Exporter.Exportable>() {
         return null
     }
 
-    override suspend fun handle(q: Exportable) {
+    override fun handle(q: Exportable) {
         // TODO
     }
 
