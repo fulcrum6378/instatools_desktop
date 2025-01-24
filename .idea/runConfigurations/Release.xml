@@ -10,7 +10,7 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value="buildFatJar" />
+          <option value="jar" />
         </list>
       </option>
       <option name="vmOptions" />

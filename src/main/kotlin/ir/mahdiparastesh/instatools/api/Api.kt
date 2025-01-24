@@ -66,7 +66,7 @@ class Api {
                 )
                 addHeader("x-ig-app-id", "936619743392459")
                 addHeader("cookie", cookies)
-                if (this is HttpPost) entity = StringEntity(body!!)
+                if (this is HttpPost && body != null) entity = StringEntity(body)
             }
         )
         val text = EntityUtils.toString(response.entity)
