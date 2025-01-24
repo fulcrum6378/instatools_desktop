@@ -32,6 +32,7 @@ class Exporter : Queuer<Exporter.Exportable>() {
                 dateTime(opt[Option.EXP_MAX_DATE.key]),
             ),
         )
+        println("They'll be exported in the background...")
     }
 
     private fun setting(value: String?): Float? {

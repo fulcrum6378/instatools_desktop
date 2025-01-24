@@ -48,6 +48,7 @@ class Downloader : Queuer<Downloader.Queued>() {
                 //med.thumb()
             )
         )
+        println("They'll be downloaded in the background...")
     }
 
     override fun handle(q: Queued) {
