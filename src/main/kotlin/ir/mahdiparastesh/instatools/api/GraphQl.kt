@@ -1,6 +1,6 @@
 package ir.mahdiparastesh.instatools.api
 
-@Suppress("SpellCheckingInspection", "MemberVisibilityCanBePrivate", "PropertyName")
+@Suppress("SpellCheckingInspection", "PropertyName")
 class GraphQl(
     val data: GraphQlData?,
     override val status: String

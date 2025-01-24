@@ -190,7 +190,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
             }
 
             "u", "user" -> if (a.size != 2)
-                throw InvalidCommandException()
+                throw InvalidCommandException("Please enter a username or the REST ID of a user.")
             else try {
                 a[1].toLong()
                 api.call<Rest.UserInfo>(Api.Endpoint.USER_INFO.url.format(a[1]), Rest.UserInfo::class).user
@@ -212,13 +212,13 @@ ${u.biography}
             }
 
             "p", "posts" -> if (a.size != 2)
-                throw InvalidCommandException()
+                throw InvalidCommandException("Please enter a username.")
             else {
                 // TODO listPst, reset
             }
 
             "t", "tagged" -> if (a.size != 2)
-                throw InvalidCommandException()
+                throw InvalidCommandException("Please enter a username.")
             else {
                 // TODO listTag, reset
             }
@@ -235,10 +235,10 @@ ${u.biography}
         }
         if (a[0] != "") nothing = 0
 
-    } catch (e: InvalidCommandException) {
-        System.err.println(e.message)
-    } catch (e: Api.FailureException) {
-        System.err.println(e.message)
+    } catch (e: Exception) {
+        if (e is Utils.InstaToolsException)
+            System.err.println(e.message)
+        else throw e
     }
 
     api.client.close()
@@ -265,4 +265,4 @@ enum class Option(val key: String, val value: Any? = null) {
 }
 
 class InvalidCommandException(msg: String = "Invalid command!") :
-    IllegalArgumentException(msg)
+    IllegalArgumentException(msg), Utils.InstaToolsException

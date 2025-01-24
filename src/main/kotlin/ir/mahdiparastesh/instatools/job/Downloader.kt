@@ -76,10 +76,13 @@ class Downloader : Queuer<Downloader.Queued>() {
             }
             try {
                 response = api.client.execute(request)
-            } catch (e: IOException) {
-                throw e  // FIXME
+            } catch (_: IOException) {
+                throw FailureException()
             }
         }
+        if (response.statusLine.statusCode != 200)
+            throw FailureException()
+
         val ba = response.entity.content.readAllBytes()
         val fos = FileOutputStream(file)
         when (extension) {
@@ -128,4 +131,7 @@ class Downloader : Queuer<Downloader.Queued>() {
         fun extension() = URI(url).path.split(".").lastOrNull()
             ?: Media.Type.entries.find { it.num == type }!!.ext
     }
+
+    class FailureException : IllegalStateException("Couldn't download from Instagram!"),
+        Utils.InstaToolsException
 }

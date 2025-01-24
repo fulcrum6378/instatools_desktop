@@ -30,7 +30,7 @@ class Exporter : Queuer<Exporter.Exportable>() {
                 },
                 dateTime(opt[Option.EXP_MIN_DATE.key]),
                 dateTime(opt[Option.EXP_MAX_DATE.key]),
-            ),
+            )
         )
     }
 

@@ -173,5 +173,5 @@ class Api {
             429 -> "Too many requests!"
             else -> "HTTP error code $status!"
         }
-    )
+    ), Utils.InstaToolsException
 }

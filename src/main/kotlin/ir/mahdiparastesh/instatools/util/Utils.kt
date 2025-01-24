@@ -89,4 +89,6 @@ object Utils {
         "--max-date", "-max-date", "max-date" -> Option.EXP_MAX_DATE
         else -> null
     }
+
+    interface InstaToolsException
 }
