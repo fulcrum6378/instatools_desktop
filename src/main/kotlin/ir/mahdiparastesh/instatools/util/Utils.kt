@@ -58,6 +58,8 @@ object Utils {
         return if (s.length == 1) "0$s" else s
     }
 
+    fun now() = Calendar.getInstance().timeInMillis
+
     /** @return a datetime text to be used in a file name. */
     fun fileDateTime(time: Long): String {
         val cal = Calendar.getInstance().apply { timeInMillis = time }

@@ -10,7 +10,7 @@ abstract class Queuer<Item> {
         queue.add(item)
     }
 
-    fun start() {
+    protected fun start() {
         if (outputDir?.isDirectory == false) outputDir?.mkdir()
         while (queue.isNotEmpty()) {
             handle(queue.first())

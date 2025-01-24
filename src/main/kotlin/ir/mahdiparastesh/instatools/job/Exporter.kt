@@ -10,7 +10,7 @@ import java.io.File
 class Exporter : Queuer<Exporter.Exportable>() {
     override val outputDir = File("./Messages/")
 
-    fun enqueue(thread: Message.DmThread, opt: HashMap<String, String?>) {
+    fun export(thread: Message.DmThread, opt: HashMap<String, String?>) {
         val allMedia = opt[Option.EXP_ALL_MEDIA.key]
         enqueue(
             Exportable(

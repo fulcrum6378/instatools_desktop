@@ -158,20 +158,17 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                     listSvd.saveUnsave(med, a[1] == "u" || a[1] == "unsave")
                 }
 
-                else -> {
-                    listSvd[a[1]]?.forEach { med ->
-                        val opt = Utils.options(a.getOrNull(2)) { key ->
-                            when (key) {
-                                "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
-                                "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
-                                else -> null
-                            }
+                else -> listSvd[a[1]]?.forEach { med ->
+                    val opt = Utils.options(a.getOrNull(2)) { key ->
+                        when (key) {
+                            "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
+                            "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
+                            else -> null
                         }
-                        downloader.enqueue(med, Utils.quality(opt?.get(Option.QUALITY.key)))
-                        if (opt?.contains(Option.UNSAVE.key) == true)
-                            listSvd.saveUnsave(med, true)
                     }
-                    downloader.start()
+                    downloader.download(med, Utils.quality(opt?.get(Option.QUALITY.key)))
+                    if (opt?.contains(Option.UNSAVE.key) == true)
+                        listSvd.saveUnsave(med, true)
                 }
             }
 
@@ -180,12 +177,10 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
             else when (a[1]) {
                 "reset" -> listMsg.fetch(true)
 
-                else -> {
-                    listMsg[a[1]]?.forEach { thread ->
-                        val opt = Utils.options(a.getOrNull(2), Utils::directExportOptions)
-                            ?: throw InvalidCommandException("Please specify options for the export.")
-                        exporter.enqueue(thread, opt)
-                    }
+                else -> listMsg[a[1]]?.forEach { thread ->
+                    val opt = Utils.options(a.getOrNull(2), Utils::directExportOptions)
+                        ?: throw InvalidCommandException("Please specify options for the export.")
+                    exporter.export(thread, opt)
                 }
             }
 

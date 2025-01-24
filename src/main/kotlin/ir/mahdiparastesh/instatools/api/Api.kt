@@ -58,11 +58,40 @@ class Api {
         typeToken: java.lang.reflect.Type? = null
     ): JSON {
         val request = (if (isPost) HttpPost(url) else HttpGet(url)).apply {
+
+            addHeader("accept", "*/*")
+            addHeader("accept-language", "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,es-US;q=0.6,es;q=0.5,ru-RU;q=0.4,ru;q=0.3,de-DE;q=0.2,de;q=0.1,cs-CZ;q=0.1,cs;q=0.1,en-US;q=0.1")
+            addHeader("content-type", "application/x-www-form-urlencoded")
+            addHeader("priority", "u=1, i")
+            addHeader("sec-ch-prefers-color-scheme", "light")
+            addHeader("sec-ch-ua", "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"")
+            addHeader("sec-ch-ua-full-version-list", "\"Google Chrome\";v=\"131.0.6778.265\", \"Chromium\";v=\"131.0.6778.265\", \"Not_A Brand\";v=\"24.0.0.0\"")
+            addHeader("sec-ch-ua-mobile", "?0")
+            addHeader("sec-ch-ua-model", "\"\"")
+            addHeader("sec-ch-ua-platform", "\"Windows\"")
+            addHeader("sec-ch-ua-platform-version", "\"10.0.0\"")
+            addHeader("sec-fetch-dest", "empty")
+            addHeader("sec-fetch-mode", "cors")
+            addHeader("sec-fetch-site", "same-origin")
+
             addHeader("x-asbd-id", "129477")
+
+            addHeader(
+                "x-bloks-version-id",
+                "0e060251e1b0f688757fc85e86223bcf86d771ecddaa2fe9f1d86dabd2eda227"
+            )
+
             if (cookies.contains("csrftoken=")) addHeader(
                 "x-csrftoken",
                 cookies.substringAfter("csrftoken=").substringBefore(";")
             )
+
+            addHeader(
+                "x-fb-friendly-name",
+                "PolarisProfilePostsQuery"
+            )
+            addHeader("x-fb-lsd", "gNhey-t_W3RnfCYH5LPDDV")
+
             addHeader("x-ig-app-id", "936619743392459")
             addHeader("cookie", cookies)
             if (this is HttpPost && body != null) entity = StringEntity(body)
@@ -163,7 +192,7 @@ class Api {
         // Logging in/out
         SIGN_OUT("https://www.instagram.com/accounts/logout/ajax/"),// MEDIA_ITEM
 
-        RAW_QUERY("https://www.instagram.com/graphql/query"),
+        QUERY("https://www.instagram.com/graphql/query"),
     }
 
     class FailureException(status: Int) : IllegalStateException(

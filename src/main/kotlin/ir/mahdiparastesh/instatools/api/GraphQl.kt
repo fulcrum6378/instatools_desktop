@@ -3,12 +3,14 @@ package ir.mahdiparastesh.instatools.api
 @Suppress("SpellCheckingInspection", "PropertyName")
 class GraphQl(
     val data: GraphQlData?,
+    //val extensions: Map<String, Any>,
     override val status: String
 ) : Rest {
 
     class GraphQlData(
         val user: User?,
-        val xdt_api__v1__media__shortcode__web_info: MediaShortcodeWebInfo,
+        val xdt_api__v1__feed__user_timeline_graphql_connection: Any?,
+        val xdt_api__v1__media__shortcode__web_info: MediaShortcodeWebInfo?,
     )
 
     /*class Profile(
