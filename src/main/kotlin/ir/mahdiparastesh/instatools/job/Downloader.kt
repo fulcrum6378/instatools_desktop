@@ -23,7 +23,9 @@ import java.net.URI
 class Downloader : Queuer<Downloader.Queued>() {
     override val outputDir = File("./Downloads/")
 
-    fun download(med: Media, idealSize: Float, link: String? = null) {
+    fun enqueue(
+        med: Media, idealSize: Float, link: String? = null, autoStart: Boolean = false
+    ) {
         val u = med.owner()
         if (med.carousel_media != null) for (car in med.carousel_media) enqueue(
             Queued(
@@ -48,7 +50,7 @@ class Downloader : Queuer<Downloader.Queued>() {
                 //med.thumb()
             )
         )
-        println("They'll be downloaded in the background...")
+        if (autoStart) start()
     }
 
     override fun handle(q: Queued) {

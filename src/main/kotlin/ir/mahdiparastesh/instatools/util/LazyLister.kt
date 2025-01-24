@@ -36,7 +36,7 @@ abstract class LazyLister<Item> {
                 arr.add(list[spd.toInt() - 1])
             else {
                 val range = spd.split("-")
-                for (r in (range.first().trim().toInt() - 1)..(range.last().trim().toInt() - 1))
+                for (r in (range.first().trim().toInt() - 1)..<range.last().trim().toInt())
                     arr.add(list[r])
             }
         }

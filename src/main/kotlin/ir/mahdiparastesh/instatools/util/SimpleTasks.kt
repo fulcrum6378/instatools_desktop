@@ -23,7 +23,9 @@ object SimpleTasks {
         if ("PolarisPostRootQueryRelayPreloader" in data) {
             @Suppress("UNCHECKED_CAST")
             val medMap = (data["PolarisPostRootQueryRelayPreloader"]!!["items"] as List<Map<String, Any>>)[0]
-            downloader.download(Gson().fromJson(Gson().toJson(medMap), Media::class.java), idealSize, link)
+            downloader.enqueue(
+                Gson().fromJson(Gson().toJson(medMap), Media::class.java), idealSize, link, true
+            )
         } else if ("instagram://media?id=" in html) {
             val medId = html.substringAfter("instagram://media?id=").substringBefore("\"")
             if (System.getenv("debug") == "1")
@@ -32,7 +34,7 @@ object SimpleTasks {
                 Api.Endpoint.MEDIA_INFO.url.format(medId), Rest.LazyList::class,
                 typeToken = object : TypeToken<Rest.LazyList<Media>>() {}.type,
             )
-            downloader.download(singleItemList.items.first(), idealSize, link)
+            downloader.enqueue(singleItemList.items.first(), idealSize, link, true)
         } else
             System.err.println("Shall we re-implement PageConfig?")
     }

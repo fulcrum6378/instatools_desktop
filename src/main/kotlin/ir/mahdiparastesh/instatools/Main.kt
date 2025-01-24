@@ -158,17 +158,20 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                     listSvd.saveUnsave(med, a[1] == "u" || a[1] == "unsave")
                 }
 
-                else -> listSvd[a[1]]?.forEach { med ->
-                    val opt = Utils.options(a.getOrNull(2)) { key ->
-                        when (key) {
-                            "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
-                            "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
-                            else -> null
+                else -> {
+                    listSvd[a[1]]?.forEach { med ->
+                        val opt = Utils.options(a.getOrNull(2)) { key ->
+                            when (key) {
+                                "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
+                                "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
+                                else -> null
+                            }
                         }
+                        downloader.enqueue(med, Utils.quality(opt?.get(Option.QUALITY.key)))
+                        if (opt?.contains(Option.UNSAVE.key) == true)
+                            listSvd.saveUnsave(med, true)
                     }
-                    downloader.download(med, Utils.quality(opt?.get(Option.QUALITY.key)))
-                    if (opt?.contains(Option.UNSAVE.key) == true)
-                        listSvd.saveUnsave(med, true)
+                    downloader.start()
                 }
             }
 
@@ -177,27 +180,12 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
             else when (a[1]) {
                 "reset" -> listMsg.fetch(true)
 
-                else -> listMsg[a[1]]?.forEach { thread ->
-                    val opt = Utils.options(a.getOrNull(2)) { key ->
-                        when (key) {
-                            "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
-                            "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
-                            "-t", "t", "--type", "-type", "type" -> Option.TYPE
-                            "--all-media", "-all-media", "all-media" -> Option.EXP_ALL_MEDIA
-                            "--images", "-images", "images", "--image", "-image", "image" -> Option.EXP_IMAGES
-                            "--videos", "-videos", "videos", "--video", "-video", "video" -> Option.EXP_VIDEOS
-                            "--posts", "-posts", "posts", "--post", "-post", "post" -> Option.EXP_POSTS
-                            "--reels", "-reels", "reels", "--reel", "-reel", "reel" -> Option.EXP_REELS
-                            "--story", "-story", "story", "--stories", "-stories", "stories" -> Option.EXP_STORY
-                            "--uploaded-images", "-uploaded-images", "uploaded-images" -> Option.EXP_UPLOADED_IMAGES
-                            "--uploaded-videos", "-uploaded-videos", "uploaded-videos" -> Option.EXP_UPLOADED_VIDEOS
-                            "--voice", "-voice", "voice" -> Option.EXP_VOICE
-                            "--min-date", "-min-date", "min-date" -> Option.EXP_MIN_DATE
-                            "--max-date", "-max-date", "max-date" -> Option.EXP_MAX_DATE
-                            else -> null
-                        }
-                    } ?: throw InvalidCommandException("Please specify options for the export.")
-                    exporter.export(thread, opt)
+                else -> {
+                    listMsg[a[1]]?.forEach { thread ->
+                        val opt = Utils.options(a.getOrNull(2), Utils::directExportOptions)
+                            ?: throw InvalidCommandException("Please specify options for the export.")
+                        exporter.enqueue(thread, opt)
+                    }
                 }
             }
 

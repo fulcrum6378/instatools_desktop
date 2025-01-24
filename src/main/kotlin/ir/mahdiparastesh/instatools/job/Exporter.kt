@@ -10,7 +10,7 @@ import java.io.File
 class Exporter : Queuer<Exporter.Exportable>() {
     override val outputDir = File("./Messages/")
 
-    fun export(thread: Message.DmThread, opt: HashMap<String, String?>) {
+    fun enqueue(thread: Message.DmThread, opt: HashMap<String, String?>) {
         val allMedia = opt[Option.EXP_ALL_MEDIA.key]
         enqueue(
             Exportable(
@@ -32,7 +32,6 @@ class Exporter : Queuer<Exporter.Exportable>() {
                 dateTime(opt[Option.EXP_MAX_DATE.key]),
             ),
         )
-        println("They'll be exported in the background...")
     }
 
     private fun setting(value: String?): Float? {

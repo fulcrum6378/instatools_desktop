@@ -71,4 +71,22 @@ object Utils {
 
     /** Converts a timestamp of microseconds to a timestamp of millisecond. */
     fun compileMicrosecondsTS(microseconds: Double) = microseconds.toLong() / 1000L
+
+    fun directExportOptions(key: String): Option? = when (key) {
+        "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
+        "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
+        "-t", "t", "--type", "-type", "type" -> Option.TYPE
+        "--all-media", "-all-media", "all-media" -> Option.EXP_ALL_MEDIA
+        "--images", "-images", "images", "--image", "-image", "image" -> Option.EXP_IMAGES
+        "--videos", "-videos", "videos", "--video", "-video", "video" -> Option.EXP_VIDEOS
+        "--posts", "-posts", "posts", "--post", "-post", "post" -> Option.EXP_POSTS
+        "--reels", "-reels", "reels", "--reel", "-reel", "reel" -> Option.EXP_REELS
+        "--story", "-story", "story", "--stories", "-stories", "stories" -> Option.EXP_STORY
+        "--uploaded-images", "-uploaded-images", "uploaded-images" -> Option.EXP_UPLOADED_IMAGES
+        "--uploaded-videos", "-uploaded-videos", "uploaded-videos" -> Option.EXP_UPLOADED_VIDEOS
+        "--voice", "-voice", "voice" -> Option.EXP_VOICE
+        "--min-date", "-min-date", "min-date" -> Option.EXP_MIN_DATE
+        "--max-date", "-max-date", "max-date" -> Option.EXP_MAX_DATE
+        else -> null
+    }
 }
