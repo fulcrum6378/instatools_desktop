@@ -12,10 +12,10 @@ import org.apache.http.impl.client.HttpClients
 import org.apache.http.util.EntityUtils
 import java.io.File
 import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.io.IOException
 import java.net.InetAddress
 import java.net.URI
+import java.net.URLEncoder
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlin.reflect.KClass
@@ -59,7 +59,6 @@ class Api {
         typeToken: java.lang.reflect.Type? = null
     ): JSON {
         val request = (if (isPost) HttpPost(url) else HttpGet(url)).apply {
-            //addHeader("accept", "*/*")
             addHeader("x-asbd-id", "129477")
             if (cookies.contains("csrftoken=")) addHeader(
                 "x-csrftoken",
@@ -79,9 +78,10 @@ class Api {
         }
 
         val text = EntityUtils.toString(response.entity)
-        FileOutputStream(File("2.json")).use { it.write(text.encodeToByteArray()) }
-        if (System.getenv("debug") == "1")
+        if (System.getenv("debug") == "1") {
             println(text)
+            //FileOutputStream(File("1.json")).use { it.write(text.encodeToByteArray()) }
+        }
         if (response.statusLine.statusCode != 200)
             throw FailureException(response.statusLine.statusCode)
         else
@@ -170,6 +170,38 @@ class Api {
         SIGN_OUT("https://www.instagram.com/accounts/logout/ajax/"),// MEDIA_ITEM
 
         QUERY("https://www.instagram.com/graphql/query"),
+    }
+
+    @Suppress(
+        "PrivatePropertyName", "SpellCheckingInspection", "KDocUnresolvedReference", "unused"
+    )
+    enum class GraphQlQuery(
+        private val doc_id: String,
+        private val variables: String,
+    ) {
+        /**
+         * @param username
+         * @param count
+         */
+        POLARIS_PROFILE_POSTS_QUERY(
+            "8934560356598281",
+            "{" +
+                    "\"data\":{\"count\":%2\$s}," + // max: 33
+                    "\"username\":\"%1\$s\"," +
+                    "\"__relay_internal__pv__PolarisIsLoggedInrelayprovider\":true" +
+                    "}"
+        ),
+
+        /**
+         * @param shortcode
+         */
+        POLARIS_POST_ROOT_QUERY(
+            "18086740648321782",
+            "{\"shortcode\":\"%s\"}"
+        );
+
+        fun body(vararg params: String) =
+            "doc_id=$doc_id&variables=${URLEncoder.encode(variables.format(*params), "utf-8")}"
     }
 
     class FailureException(status: Int) : IllegalStateException(
