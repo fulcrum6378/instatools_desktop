@@ -1,6 +1,7 @@
 package ir.mahdiparastesh.instatools.api
 
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import ir.mahdiparastesh.instatools.util.Utils
 import org.apache.http.HttpHost
 import org.apache.http.client.config.RequestConfig
@@ -82,10 +83,13 @@ class Api {
             println(text)
             //FileOutputStream(File("1.json")).use { it.write(text.encodeToByteArray()) }
         }
-        if (response.statusLine.statusCode != 200)
+        if (response.statusLine.statusCode == 200) return try {
+            Gson().fromJson(text, typeToken ?: clazz.java) as JSON
+        } catch (_: JsonSyntaxException) {
+            println(text)
+            throw FailureException(-2)
+        } else
             throw FailureException(response.statusLine.statusCode)
-        else
-            return Gson().fromJson(text, typeToken ?: clazz.java) as JSON
     }
 
     fun page(url: String): String {
@@ -180,22 +184,37 @@ class Api {
         private val variables: String,
     ) {
         /**
+         * PolarisProfilePostsQuery
          * @param username
-         * @param count
+         * @param count default: 12, maximum: 33
+         * @param after Media::id of the last item in the previous fetch
          */
-        POLARIS_PROFILE_POSTS_QUERY(
+        PROFILE_POSTS(
             "8934560356598281",
             "{" +
-                    "\"data\":{\"count\":%2\$s}," + // max: 33
+                    "\"after\":\"%3\$s\"," +
+                    "\"data\":{\"count\":%2\$s}," +
                     "\"username\":\"%1\$s\"," +
                     "\"__relay_internal__pv__PolarisIsLoggedInrelayprovider\":true" +
                     "}"
         ),
 
         /**
+         * PolarisProfileTaggedTabContentQuery
+         * @param user_id user's REST ID
+         * @param count default: 12
+         * @param after Media::pk of the last item in the previous fetch
+         */
+        PROFILE_TAGGED_TAB_CONTENT(
+            "8626574937464773",
+            "{\"after\":\"%3\$s\",\"count\":%2\$s,\"user_id\":\"%1\$s\"}"
+        ),
+
+        /**
+         * PolarisPostRootQuery
          * @param shortcode
          */
-        POLARIS_POST_ROOT_QUERY(
+        POST_ROOT(
             "18086740648321782",
             "{\"shortcode\":\"%s\"}"
         );
@@ -207,6 +226,7 @@ class Api {
     class FailureException(status: Int) : IllegalStateException(
         "API ERROR: " + when (status) {
             -1 -> "Couldn't connect to Instagram!"
+            -2 -> "Invalid response from Instagram!"
             302 -> "Found redirection!"
             429 -> "Too many requests!"
             else -> "HTTP error code $status!"

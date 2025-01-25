@@ -9,9 +9,9 @@ import ir.mahdiparastesh.instatools.api.Rest
 import ir.mahdiparastesh.instatools.job.Downloader
 import ir.mahdiparastesh.instatools.job.Exporter
 import ir.mahdiparastesh.instatools.list.Direct
-import ir.mahdiparastesh.instatools.list.Posts
 import ir.mahdiparastesh.instatools.list.Saved
-import ir.mahdiparastesh.instatools.list.Tagged
+import ir.mahdiparastesh.instatools.util.Option
+import ir.mahdiparastesh.instatools.util.Profile
 import ir.mahdiparastesh.instatools.util.SimpleTasks
 import ir.mahdiparastesh.instatools.util.Utils
 import java.net.URI
@@ -67,9 +67,9 @@ m, messages                    List your direct message threads.
   m reset                      Forget the previously loaded threads and load them again.
 u, user <USER|REST_ID>         Show details about an IG account. (e.g. u 8337021434)
 p, posts <USERNAME>            List main posts of a profile. (e.g. p fulcrum6378)
-  p reset                      Forget the previously loaded main posts and load them again.
+  p <USERNAME> reset           Forget the previously loaded main posts of a user and load them again.
 t, tagged <USERNAME>           List tagged posts of a profile. (e.g. t fulcrum6378)
-  t reset                      Forget the previously loaded tagged posts and load them again.
+  t <USERNAME> reset           Forget the previously loaded tagged posts of a user and load them again.
 q, quit                        Quit the program.
 
 >> List of qualities:
@@ -87,8 +87,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
         System.err.println("No cookies found; insert cookies in `cookies.txt` right beside this JAR...")
     val listSvd: Saved by lazy { Saved() }
     val listMsg: Direct by lazy { Direct() }
-    val listPst: Posts by lazy { Posts() }
-    val listTag: Tagged by lazy { Tagged() }
+    val profiles = hashMapOf<String, Profile>()
 
     // execute commands
     var repeat = true
@@ -104,6 +103,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
             repeat = false
         }
 
+        @Suppress("DuplicatedCode")
         when (a[0]) {
 
             "set" -> when (a.getOrNull(1)) {
@@ -139,13 +139,13 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                     "Please enter a link after \"${a[0]}\"; like \"${a[0]} https://\"..."
                 )
             else if ("/p/" in a[1] || "/reel/" in a[1]) {
-                val opt = Utils.options(a.getOrNull(2)) { key ->
+                val opt = Option.parse(a.getOrNull(2)) { key ->
                     when (key) {
                         "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
                         else -> null
                     }
                 }
-                SimpleTasks.handlePostLink(a[1], Utils.quality(opt?.get(Option.QUALITY.key)))
+                SimpleTasks.handlePostLink(a[1], Option.quality(opt?.get(Option.QUALITY.key)))
             } else
                 throw InvalidCommandException("Only links to Instagram posts and reels are supported!")
 
@@ -159,14 +159,14 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                 }
 
                 else -> listSvd[a[1]]?.forEach { med ->
-                    val opt = Utils.options(a.getOrNull(2)) { key ->
+                    val opt = Option.parse(a.getOrNull(2)) { key ->
                         when (key) {
                             "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
                             "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
                             else -> null
                         }
                     }
-                    downloader.download(med, Utils.quality(opt?.get(Option.QUALITY.key)))
+                    downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
                     if (opt?.contains(Option.UNSAVE.key) == true)
                         listSvd.saveUnsave(med, true)
                 }
@@ -178,7 +178,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                 "reset" -> listMsg.fetch(true)
 
                 else -> listMsg[a[1]]?.forEach { thread ->
-                    val opt = Utils.options(a.getOrNull(2), Utils::directExportOptions)
+                    val opt = Option.parse(a.getOrNull(2), Option::directExportOptions)
                         ?: throw InvalidCommandException("Please specify options for the export.")
                     exporter.export(thread, opt)
                 }
@@ -196,7 +196,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                     """
 Full name:        ${u.full_name}
 Username:         @${u.username}
-Unique REST ID:   ${u.id()}
+REST ID:          ${u.id()}
 Pronouns:         ${u.pronouns?.joinToString(", ")}
 Is private?       ${if (u.is_private == true) "Yes" else "No"}
 Bio:
@@ -209,13 +209,27 @@ ${u.biography}
             "p", "posts" -> if (a.size != 2)
                 throw InvalidCommandException("Please enter a username.")
             else {
-                // TODO listPst, reset
+                if (a[1] !in profiles) profiles[a[1]] = Profile(a[1])
+                val p = profiles[a[1]]!!
+                val reset = a.getOrNull(2) == "reset"
+                if (a.size == 2 || reset)
+                    p.posts.fetch(reset)
+                else {
+                    // TODO
+                }
             }
 
             "t", "tagged" -> if (a.size != 2)
                 throw InvalidCommandException("Please enter a username.")
             else {
-                // TODO listTag, reset
+                if (a[1] !in profiles) profiles[a[1]] = Profile(a[1])
+                val p = profiles[a[1]]!!
+                val reset = a.getOrNull(2) == "reset"
+                if (a.size == 2 || reset)
+                    p.tagged.fetch(reset)
+                else {
+                    // TODO
+                }
             }
 
             "q", "quit" -> repeat = false
@@ -238,25 +252,6 @@ ${u.biography}
 
     api.client.close()
     println("Good luck!")
-}
-
-enum class Option(val key: String, val value: Any? = null) {
-    QUALITY("q"),
-    UNSAVE("u"),
-    TYPE("t"),
-
-    // exporting
-    EXP_ALL_MEDIA("all-media"),
-    EXP_IMAGES("images"),
-    EXP_VIDEOS("videos"),
-    EXP_POSTS("posts"),
-    EXP_REELS("reels"),
-    EXP_STORY("story"),
-    EXP_UPLOADED_IMAGES("uploaded-images"),
-    EXP_UPLOADED_VIDEOS("uploaded-videos"),
-    EXP_VOICE("voice"),
-    EXP_MIN_DATE("min-date"),
-    EXP_MAX_DATE("max-date"),
 }
 
 class InvalidCommandException(msg: String = "Invalid command!") :

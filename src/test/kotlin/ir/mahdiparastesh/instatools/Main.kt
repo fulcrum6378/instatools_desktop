@@ -7,7 +7,7 @@ fun main() {
     val api = Api()
     val size = api.call<GraphQl>(
         Api.Endpoint.QUERY.url, GraphQl::class, true,
-        Api.GraphQlQuery.POLARIS_PROFILE_POSTS_QUERY.body("fulcrum6378", "35")
+        Api.GraphQlQuery.PROFILE_POSTS.body("fulcrum6378", "35", "null")
     ).data?.xdt_api__v1__feed__user_timeline_graphql_connection?.edges?.size
     println("Got $size items!") // 33
 }
