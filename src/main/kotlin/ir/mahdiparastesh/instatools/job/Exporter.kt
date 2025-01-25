@@ -1,8 +1,8 @@
 package ir.mahdiparastesh.instatools.job
 
 import ir.mahdiparastesh.instatools.InvalidCommandException
-import ir.mahdiparastesh.instatools.Option
 import ir.mahdiparastesh.instatools.api.Message
+import ir.mahdiparastesh.instatools.util.Option
 import ir.mahdiparastesh.instatools.util.Queuer
 import java.io.File
 

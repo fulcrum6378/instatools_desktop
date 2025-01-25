@@ -88,6 +88,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
     val listSvd: Saved by lazy { Saved() }
     val listMsg: Direct by lazy { Direct() }
     val profiles = hashMapOf<String, Profile>()
+    var lastUserName: String? = null
 
     // execute commands
     var repeat = true
@@ -204,13 +205,18 @@ ${u.biography}
 
                 """.trimIndent()
                 )
+                lastUserName = u.username
             }
 
-            "p", "posts" -> if (a.size != 2)
-                throw InvalidCommandException("Please enter a username.")
-            else {
+            "p", "posts" -> if (a.size < 2) {
+                if (lastUserName == null)
+                    throw InvalidCommandException("Please enter a username.")
+                else
+                    profiles[lastUserName]!!.posts.fetch()
+            } else {
                 if (a[1] !in profiles) profiles[a[1]] = Profile(a[1])
                 val p = profiles[a[1]]!!
+                lastUserName = a[1]
                 val reset = a.getOrNull(2) == "reset"
                 if (a.size == 2 || reset)
                     p.posts.fetch(reset)
@@ -219,11 +225,15 @@ ${u.biography}
                 }
             }
 
-            "t", "tagged" -> if (a.size != 2)
-                throw InvalidCommandException("Please enter a username.")
-            else {
+            "t", "tagged" -> if (a.size < 2) {
+                if (lastUserName == null)
+                    throw InvalidCommandException("Please enter a username.")
+                else
+                    profiles[lastUserName]!!.tagged.fetch()
+            } else {
                 if (a[1] !in profiles) profiles[a[1]] = Profile(a[1])
                 val p = profiles[a[1]]!!
+                lastUserName = a[1]
                 val reset = a.getOrNull(2) == "reset"
                 if (a.size == 2 || reset)
                     p.tagged.fetch(reset)

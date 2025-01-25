@@ -200,14 +200,24 @@ class Api {
         ),
 
         /**
-         * PolarisProfileTaggedTabContentQuery
+         * PolarisProfileTaggedTabContentQuery (first fetch)
+         * @param user_id user's REST ID
+         * @param count default: 12
+         */
+        PROFILE_TAGGED(
+            "8626574937464773",
+            "{\"count\":%2\$s,\"user_id\":\"%1\$s\"}"
+        ),
+
+        /**
+         * PolarisProfileTaggedTabContentQuery (second and later fetches)
          * @param user_id user's REST ID
          * @param count default: 12
          * @param after Media::pk of the last item in the previous fetch
          */
-        PROFILE_TAGGED_TAB_CONTENT(
-            "8626574937464773",
-            "{\"after\":\"%3\$s\",\"count\":%2\$s,\"user_id\":\"%1\$s\"}"
+        PROFILE_TAGGED_CURSORED(
+            "8786107121469577",
+            "{\"after\":\"%3\$s\",\"first\":12,\"count\":%2\$s,\"user_id\":\"%1\$s\"}"
         ),
 
         /**

@@ -1,6 +1,6 @@
 package ir.mahdiparastesh.instatools.api
 
-@Suppress("PropertyName")
+@Suppress("PropertyName", "SpellCheckingInspection")
 class GraphQl(
     val data: GraphQlData?,
     //val extensions: Map<String, Any>,
@@ -11,6 +11,7 @@ class GraphQl(
         val user: User?,
         val xdt_api__v1__feed__user_timeline_graphql_connection: Page?,
         val xdt_api__v1__media__shortcode__web_info: MediaShortcodeWebInfo?,
+        val xdt_api__v1__usertags__user_id__feed_connection: Page?,
     )
 
     data class Page(
