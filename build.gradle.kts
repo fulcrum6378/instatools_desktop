@@ -1,5 +1,5 @@
 group = "ir.mahdiparastesh"
-version = "1.5.5"
+version = "1.5.7"
 
 plugins { kotlin("jvm") version "2.1.0" }
 
@@ -13,7 +13,10 @@ dependencies {
 }
 
 tasks.jar {
-    manifest { attributes["Main-Class"] = "ir.mahdiparastesh.instatools.MainKt" }
+    manifest {
+        attributes["Main-Class"] = "ir.mahdiparastesh.instatools.MainKt"
+        attributes["Manifest-Version"] = version
+    }
     from(configurations.runtimeClasspath.get().map(::zipTree))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
