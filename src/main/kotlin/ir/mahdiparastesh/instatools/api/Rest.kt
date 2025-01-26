@@ -1,6 +1,6 @@
 package ir.mahdiparastesh.instatools.api
 
-@Suppress("SpellCheckingInspection", "PropertyName")
+@Suppress("PropertyName")
 interface Rest {
     val status: String
 
@@ -55,69 +55,6 @@ interface Rest {
         val friendship_statuses: Map<String, User.FriendshipStatus>,
         override val status: String
     ) : Rest
-
-    interface DynamicReelsList : Rest {
-        //var broadcast: Array<Any?>? = null
-    }
-
-    //data class Story(val reel: StoryReel?) : DynamicReelsList()
-
-    /*interface TrayWrapper<T> where T : Reel {
-        val tray: Array<T>
-    }*/
-
-    /*data class Highlights(
-        override val tray: Array<HighlightReel>,
-        //val show_empty_state: Boolean,
-    ) : Rest(), TrayWrapper<HighlightReel>*/
-
-    /*data class Reels<R>(
-        val reels: Map<String, R>,
-        //val reels_media: Array<R>,
-    ) : Rest() where R : Reel*/
-
-    /*abstract class Reel(
-        //val ad_expiry_timestamp_in_millis: Any?,
-        //val can_gif_quick_reply: Boolean,
-        //val can_reply: Boolean,
-        //val can_reshare: Boolean,
-        //val is_cta_sticker_available: Any?,
-        var items: Array<MediaOld>?,
-        //val latest_reel_media: Double,
-        //val reel_type: String,
-        //val seen: Double,
-        val user: User
-    )*/
-
-    /*data class StoryReel(
-        //val expiring_at: Double,
-        //val has_besties_media: Boolean?,
-        //val has_fan_club_media: Boolean?,
-        //val id: Double, // User ID is the same as that of the reel!
-        items: Array<MediaOld>,
-        //val media_count: Float,
-        //val media_ids: Array<String>,
-        //val prefetch_count: Float,
-        user: User
-    ) : Reel(items, user)*/
-
-    /*data class HighlightReel(
-        val cover_media: HighlightCover?, // uncertain "?"
-        //val created_at: Double,
-        val id: String, // starts with "highlight:"
-        //val is_converted_to_clips: Boolean,
-        //val is_pinned_highlight: Boolean,
-        items: Array<MediaOld>?,
-        val media_count: Float,
-        //val media_ids: Array<String>?,
-        //val prefetch_count: Double,
-        //val ranked_position: Double,
-        //val seen_ranked_position: Double,
-        val title: String,
-        user: User
-    ) : Reel(items, user)*/
-
-    //data class HighlightCover(val cropped_image_version: MediaOld.Candidate/*, val crop_rect: Any?*/)
 
     data class Search(
         //val places: Array<HashMap<String, *>>,

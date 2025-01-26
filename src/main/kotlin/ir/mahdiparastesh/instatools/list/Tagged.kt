@@ -19,7 +19,7 @@ class Tagged(private val p: Profile) : LazyLister<Media>() {
             else
                 Api.GraphQlQuery.PROFILE_TAGGED_CURSORED.body(p.userId!!, "36", cursor!!)
         ).data?.xdt_api__v1__usertags__user_id__feed_connection
-        if (page == null) throw Api.FailureException(-2)
+        if (page == null) throw Api.FailureException(-3)
 
         for (e in page.edges) {
             println(

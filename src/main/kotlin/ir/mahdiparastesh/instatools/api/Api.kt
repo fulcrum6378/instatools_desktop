@@ -67,16 +67,24 @@ class Api {
         typeToken: java.lang.reflect.Type? = null
     ): JSON {
         val request = (if (isPost) HttpPost(url) else HttpGet(url)).apply {
+            addHeader("accept", "*/*")
+            addHeader("accept-language", "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,es-US;q=0.6,es;q=0.5,ru-RU;q=0.4,ru;q=0.3,de-DE;q=0.2,de;q=0.1,cs-CZ;q=0.1,cs;q=0.1,en-US;q=0.1")
+            addHeader("priority", "u=1, i")
             addHeader("x-asbd-id", "129477")
+            addHeader("x-bloks-version-id", "0e060251e1b0f688757fc85e86223bcf86d771ecddaa2fe9f1d86dabd2eda227")
             if (cookies.contains("csrftoken=")) addHeader(
                 "x-csrftoken",
                 cookies.substringAfter("csrftoken=").substringBefore(";")
             )
+            addHeader("x-fb-friendly-name", "PolarisStoriesV3HighlightsPageQuery")
+            addHeader("x-fb-lsd", "h1DiMkOiHePdJPBzWJzrKO")
             addHeader("x-ig-app-id", "936619743392459")
             addHeader("cookie", cookies)
             if (this is HttpPost && body != null) {
                 addHeader("content-type", "application/x-www-form-urlencoded")
                 entity = StringEntity(body)
+                if (System.getenv("debug") == "1")
+                    println("Post body: $body")
             }
         }
         val response = try {
@@ -207,7 +215,7 @@ class Api {
          * PolarisProfileTaggedTabContentQuery (second and later fetches)
          * @param user_id user's REST ID
          * @param count default: 12
-         * @param after Media::pk of the last item in the previous fetch
+         * @param after [Media]::pk of the last item in the previous fetch
          */
         PROFILE_TAGGED_CURSORED(
             "8786107121469577",
@@ -221,6 +229,39 @@ class Api {
         POST_ROOT(
             "18086740648321782",
             "{\"shortcode\":\"%s\"}"
+        ),
+
+        /**
+         * PolarisStoriesV3ReelPageStandaloneQuery
+         * @param user_id `"\"<User ID>\""` separated by `,`
+         */
+        STORY(
+            "27760393576942150",
+            "{\"reel_ids_arr\":[%s]}"
+        ),
+
+        /**
+         * PolarisProfileStoryHighlightsTrayContentQuery
+         * @param user_id user's REST ID
+         */
+        PROFILE_HIGHLIGHTS_TRAY(
+            "8198469583554901",
+            "{\"user_id\":\"%s\"}"
+        ),
+
+        /**
+         * PolarisStoriesV3HighlightsPageQuery
+         * @param reel_ids `"\"[Story]::id\""`
+         * @param initial_reel_id `"\"[Story]::id\""` separated by `,`
+         */
+        HIGHLIGHTS(
+            "29001692012763642",
+            "{" +
+                    "\"initial_reel_id\":%2\$s," +
+                    "\"reel_ids\":[%1\$s]," +
+                    "\"first\":3," +
+                    "\"last\":2" +
+                    "}"
         );
 
         fun body(vararg params: String) =

@@ -10,7 +10,7 @@ import ir.mahdiparastesh.instatools.util.*
 
 val listSvd: Saved by lazy { Saved() }
 val listMsg: Direct by lazy { Direct() }
-val profiles = hashMapOf<String, Profile>()
+val profiles: HashMap<String, Profile> = hashMapOf()
 var latestUser: String? = null
 
 fun main(args: Array<String>) {

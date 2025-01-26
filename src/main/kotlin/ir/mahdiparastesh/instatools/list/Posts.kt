@@ -15,7 +15,7 @@ class Posts(private val p: Profile) : LazyLister<Media>() {
             Api.Endpoint.QUERY.url, GraphQl::class, true, Api.GraphQlQuery.PROFILE_POSTS
                 .body(p.userName, "33", if (cursor != null && !reset) cursor!! else "null")
         ).data?.xdt_api__v1__feed__user_timeline_graphql_connection
-        if (page == null) throw Api.FailureException(-2)
+        if (page == null) throw Api.FailureException(-3)
         if (p.userId == null && page.edges.isNotEmpty())
             p.userId = page.edges.first().node.user?.pk
 

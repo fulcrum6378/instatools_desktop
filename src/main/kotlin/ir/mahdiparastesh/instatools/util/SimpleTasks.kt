@@ -40,5 +40,7 @@ object SimpleTasks {
 
     /** If a user doesn't exist, HTTP error code 404 will be thrown! */
     fun profileInfo(userName: String): User =
-        api.call<GraphQl>(Api.Endpoint.PROFILE_INFO.url.format(userName), GraphQl::class).data!!.user!!
+        api.call<GraphQl>(Api.Endpoint.PROFILE_INFO.url.format(userName), GraphQl::class).data
+            ?.let { it.user!! }
+            ?: throw Api.FailureException(-3)
 }
