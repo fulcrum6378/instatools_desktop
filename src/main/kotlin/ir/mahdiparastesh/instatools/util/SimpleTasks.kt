@@ -4,10 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.Context.downloader
-import ir.mahdiparastesh.instatools.api.Api
-import ir.mahdiparastesh.instatools.api.Media
-import ir.mahdiparastesh.instatools.api.RelayPrefetchedStreamCache
-import ir.mahdiparastesh.instatools.api.Rest
+import ir.mahdiparastesh.instatools.api.*
 
 object SimpleTasks {
 
@@ -36,4 +33,12 @@ object SimpleTasks {
         } else
             System.err.println("Shall we re-implement PageConfig?")
     }
+
+    /** If a user doesn't exist, HTTP error code 404 will be thrown! */
+    fun userInfo(userId: String): User =
+        api.call<Rest.UserInfo>(Api.Endpoint.USER_INFO.url.format(userId), Rest.UserInfo::class).user
+
+    /** If a user doesn't exist, HTTP error code 404 will be thrown! */
+    fun profileInfo(userName: String): User =
+        api.call<GraphQl>(Api.Endpoint.PROFILE_INFO.url.format(userName), GraphQl::class).data!!.user!!
 }

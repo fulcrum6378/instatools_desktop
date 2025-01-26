@@ -2,6 +2,7 @@ package ir.mahdiparastesh.instatools.api
 
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
+import ir.mahdiparastesh.instatools.InvalidCommandException
 import ir.mahdiparastesh.instatools.util.Utils
 import org.apache.http.ConnectionClosedException
 import org.apache.http.HttpHost
@@ -17,6 +18,7 @@ import java.io.FileInputStream
 import java.io.IOException
 import java.net.InetAddress
 import java.net.URI
+import java.net.URISyntaxException
 import java.net.URLEncoder
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -33,14 +35,18 @@ class Api {
     }
 
     fun createClient(
-        timeout: Int = 10000, proxy: URI? = null
+        timeout: Int = 10000, proxy: String? = null
     ): CloseableHttpClient = HttpClients.custom().apply {
         setDefaultRequestConfig(
             RequestConfig.custom().setConnectTimeout(timeout).build()
         )
 
-        if (proxy != null)
-            setProxy(HttpHost(proxy.host, proxy.port, proxy.scheme))
+        if (proxy != null) try {
+            val uri = URI(proxy)
+            setProxy(HttpHost(uri.host, uri.port, uri.scheme))
+        } catch (_: URISyntaxException) {
+            throw InvalidCommandException("Please enter a valid URI like the example above.")
+        }
         // special settings for our own computers
         else if (InetAddress.getLocalHost().hostName in arrayOf("CHIMAERA", "ANGELDUST"))
             setProxy(HttpHost("127.0.0.1", 8580, "http"))
@@ -116,52 +122,7 @@ class Api {
 
     @Suppress("unused")
     enum class Endpoint(val url: String) {
-        // Profiles
-        PROFILE("https://www.instagram.com/api/v1/users/web_profile_info/?username=%s"),
-        USER_INFO("https://www.instagram.com/api/v1/users/%s/info/"),
-        SEARCH(
-            "https://www.instagram.com/api/v1/web/search/topsearch/?context=blended&query=%s" +
-                    "&include_reel=false&search_surface=web_top_search"
-        ), // &rank_token=0.9366187585704904
-
-        // Posts & Stories
-        MEDIA_INFO("https://www.instagram.com/api/v1/media/%s/info/"),
-        POSTS(
-            "https://www.instagram.com/graphql/query/?query_hash=${Utils.GRAPHQL_POST_HASH}" +
-                    "&variables={\"id\":\"%1\$s\",\"first\":12,\"after\":\"%2\$s\"}"
-        ),
-        TAGGED("https://www.instagram.com/api/v1/usertags/%1\$s/feed/?count=12&max_id=%2\$s"),
-        STORY("https://www.instagram.com/api/v1/feed/user/%s/story/"),
-        HIGHLIGHTS("https://www.instagram.com/api/v1/highlights/%s/highlights_tray/"),
-        REEL_ITEM("https://www.instagram.com/api/v1/feed/reels_media/?reel_ids=%s"),
-        // StoryReel = "Full-Screen Video"; Story { reel, reel, ... }, Highlights { reel, reel, ... }
-        // Adding "media_id=" parameter is of no use, the results are the same!!
-        /*NEW_TAGGED( // Requires edges again
-            "https://www.instagram.com/graphql/query/?query_hash=$taggedHash" +
-                    "&variables={\"id\":\"%1\$s\",\"first\":12,\"after\":\"%2\$s\"}"
-        ),*///const val taggedHash = "be13233562af2d229b008d2976b998b5"
-
-        // Interactions (always use "?count=" for more accurate results)
-        /*FOLLOWERS("https://www.instagram.com/api/v1/friendships/%1\$s/followers/?count=200&max_id=%2\$s"),
-        FOLLOWING("https://www.instagram.com/api/v1/friendships/%1\$s/following/?count=200&max_id=%2\$s"),
-        FRIENDSHIPS_MANY("https://www.instagram.com/api/v1/friendships/show_many/"),
-        // method = POST, `user_ids=<ids separated by ",">`, expect Rest$Friendships
-        FRIENDSHIP("https://www.instagram.com/api/v1/friendships/show/%s/"),*/ // GET
-
-        FOLLOW("https://www.instagram.com/api/v1/friendships/create/%s/"),
-        UNFOLLOW("https://www.instagram.com/api/v1/friendships/destroy/%s/"),
-        MUTE("https://www.instagram.com/api/v1/friendships/mute_posts_or_story_from_follow/"),
-        UNMUTE("https://www.instagram.com/api/v1/friendships/unmute_posts_or_story_from_follow/"),
-
-        // method = POST, "target_posts_author_id=<USER_ID>" AND(using &)/OR "target_reel_author_id=<USER_ID>",
-        // expect Rest$Friendships
-        RESTRICT("https://www.instagram.com/api/v1/web/restrict_action/restrict/"),
-        UNRESTRICT("https://www.instagram.com/api/v1/web/restrict_action/unrestrict/"),
-
-        // method = POST, body = "target_user_id=<USER_ID>", expect "{"status":"ok"}"
-        BLOCK("https://www.instagram.com/api/v1/web/friendships/%d/block/"),
-        UNBLOCK("https://www.instagram.com/api/v1/web/friendships/%d/unblock/"),
-        // method = POST, expect {"status":"ok"}
+        QUERY("https://www.instagram.com/graphql/query"),
 
         // Saving
         SAVED("https://www.instagram.com/api/v1/feed/saved/posts/"),
@@ -170,15 +131,43 @@ class Api {
 
         // Messaging
         INBOX("https://www.instagram.com/api/v1/direct_v2/inbox/?cursor=%s"),
-        DIRECT("https://www.instagram.com/api/v1/direct_v2/threads/%1\$s/?cursor=%2\$s&limit=%3\$d"),/*
-        // persistentBadging=true&folder=[0(PRIMARY)|1(GENERAL)]
-        // Avoiding "limit" argument will default to 20, but can be more than that. */
+        DIRECT("https://www.instagram.com/api/v1/direct_v2/threads/%1\$s/?cursor=%2\$s&limit=%3\$d"),
         SEEN("https://www.instagram.com/api/v1/direct_v2/threads/%1\$s/items/%2\$s/seen/"),
 
-        // Logging in/out
-        SIGN_OUT("https://www.instagram.com/accounts/logout/ajax/"),// MEDIA_ITEM
+        // Users
+        PROFILE_INFO("https://www.instagram.com/api/v1/users/web_profile_info/?username=%s"),
+        USER_INFO("https://www.instagram.com/api/v1/users/%s/info/"),
+        SEARCH(
+            "https://www.instagram.com/api/v1/web/search/topsearch/?context=blended&query=%s" +
+                    "&include_reel=false&search_surface=web_top_search"
+        ),
 
-        QUERY("https://www.instagram.com/graphql/query"),
+        // Stories & Highlights
+        MEDIA_INFO("https://www.instagram.com/api/v1/media/%s/info/"),
+        STORY("https://www.instagram.com/api/v1/feed/user/%s/story/"),
+        HIGHLIGHTS("https://www.instagram.com/api/v1/highlights/%s/highlights_tray/"),
+        REEL_ITEM("https://www.instagram.com/api/v1/feed/reels_media/?reel_ids=%s"),
+        // StoryReel = "Full-Screen Video"; Story { reel, reel, ... }, Highlights { reel, reel, ... }
+        // Adding "media_id=" parameter is of no use, the results are the same!!
+
+        // Others' interactions with others (always use "?count=" for more accurate results)
+        FOLLOWERS("https://www.instagram.com/api/v1/friendships/%1\$s/followers/?count=200&max_id=%2\$s"),
+        FOLLOWING("https://www.instagram.com/api/v1/friendships/%1\$s/following/?count=200&max_id=%2\$s"),
+        FRIENDSHIPS_MANY("https://www.instagram.com/api/v1/friendships/show_many/"),
+        FRIENDSHIP("https://www.instagram.com/api/v1/friendships/show/%s/"), // GET
+
+        // My interactions with other users
+        FOLLOW("https://www.instagram.com/api/v1/friendships/create/%s/"),
+        UNFOLLOW("https://www.instagram.com/api/v1/friendships/destroy/%s/"),
+        MUTE("https://www.instagram.com/api/v1/friendships/mute_posts_or_story_from_follow/"),
+        UNMUTE("https://www.instagram.com/api/v1/friendships/unmute_posts_or_story_from_follow/"),
+        RESTRICT("https://www.instagram.com/api/v1/web/restrict_action/restrict/"),
+        UNRESTRICT("https://www.instagram.com/api/v1/web/restrict_action/unrestrict/"),
+        BLOCK("https://www.instagram.com/api/v1/web/friendships/%d/block/"),
+        UNBLOCK("https://www.instagram.com/api/v1/web/friendships/%d/unblock/"),
+
+        // Logging in/out
+        SIGN_OUT("https://www.instagram.com/accounts/logout/ajax/")
     }
 
     @Suppress(
@@ -244,6 +233,8 @@ class Api {
             -2 -> "Connection was broken!"
             -3 -> "Invalid response from Instagram!"
             302 -> "Found redirection!"
+            401 -> "You've been logged out!"
+            404 -> "Not found!"
             429 -> "Too many requests!"
             else -> "HTTP error code $status!"
         }

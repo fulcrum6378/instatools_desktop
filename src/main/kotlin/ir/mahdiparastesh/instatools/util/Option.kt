@@ -58,23 +58,5 @@ enum class Option(val key: String, val value: Any? = null) {
                 else -> throw InvalidCommandException("Unknown quality \"$value\"!")
             }
         }
-
-        fun directExportOptions(key: String): Option? = when (key) {
-            "-u", "u", "--unsave", "-unsave", "unsave" -> UNSAVE
-            "-q", "q", "--quality", "-quality", "quality" -> QUALITY
-            "-t", "t", "--type", "-type", "type" -> TYPE
-            "--all-media", "-all-media", "all-media" -> EXP_ALL_MEDIA
-            "--images", "-images", "images", "--image", "-image", "image" -> EXP_IMAGES
-            "--videos", "-videos", "videos", "--video", "-video", "video" -> EXP_VIDEOS
-            "--posts", "-posts", "posts", "--post", "-post", "post" -> EXP_POSTS
-            "--reels", "-reels", "reels", "--reel", "-reel", "reel" -> EXP_REELS
-            "--story", "-story", "story", "--stories", "-stories", "stories" -> EXP_STORY
-            "--uploaded-images", "-uploaded-images", "uploaded-images" -> EXP_UPLOADED_IMAGES
-            "--uploaded-videos", "-uploaded-videos", "uploaded-videos" -> EXP_UPLOADED_VIDEOS
-            "--voice", "-voice", "voice" -> EXP_VOICE
-            "--min-date", "-min-date", "min-date" -> EXP_MIN_DATE
-            "--max-date", "-max-date", "max-date" -> EXP_MAX_DATE
-            else -> null
-        }
     }
 }

@@ -3,25 +3,15 @@ package ir.mahdiparastesh.instatools
 import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.Context.downloader
 import ir.mahdiparastesh.instatools.Context.exporter
-import ir.mahdiparastesh.instatools.api.Api
-import ir.mahdiparastesh.instatools.api.GraphQl
-import ir.mahdiparastesh.instatools.api.Rest
-import ir.mahdiparastesh.instatools.job.Downloader
-import ir.mahdiparastesh.instatools.job.Exporter
+import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.list.Direct
 import ir.mahdiparastesh.instatools.list.Saved
-import ir.mahdiparastesh.instatools.util.Option
-import ir.mahdiparastesh.instatools.util.Profile
-import ir.mahdiparastesh.instatools.util.SimpleTasks
-import ir.mahdiparastesh.instatools.util.Utils
-import java.net.URI
-import java.net.URISyntaxException
+import ir.mahdiparastesh.instatools.util.*
 
-object Context {
-    val api: Api by lazy { Api() }
-    val downloader: Downloader by lazy { Downloader() }
-    val exporter: Exporter by lazy { Exporter() }
-}
+val listSvd: Saved by lazy { Saved() }
+val listMsg: Direct by lazy { Direct() }
+val profiles = hashMapOf<String, Profile>()
+var latestUser: String? = null
 
 fun main(args: Array<String>) {
     val interactive = args.isEmpty()
@@ -93,14 +83,9 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
     // preparations
     if (!api.loadCookies())
         System.err.println("No cookies found; insert cookies in `cookies.txt` right beside this JAR...")
-    val listSvd: Saved by lazy { Saved() }
-    val listMsg: Direct by lazy { Direct() }
-    val profiles = hashMapOf<String, Profile>()
-    var latestUser: String? = null
 
     // execute commands
     var repeat = true
-    var nothing = 0
     while (repeat) try {
         val a: Array<String>
         if (interactive) {
@@ -122,11 +107,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                         throw InvalidCommandException("Such a file doesn't exist!")
                 }
 
-                "proxy" -> try {
-                    api.client = api.createClient(proxy = URI(a[2]))
-                } catch (_: URISyntaxException) {
-                    throw InvalidCommandException("Please enter a valid URI like the example above.")
-                }
+                "proxy" -> api.client = api.createClient(proxy = a[2])
 
                 "timeout" -> {
                     val sec = try {
@@ -189,8 +170,25 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
 
                 else -> {
                     if (a.size == 2) throw InvalidCommandException("Please specify options for the export.")
-                    val opt = Option.parse(a.slice(2..<a.size), Option::directExportOptions)
-                    // FIXME this call creates the "MainKt$main$4$opt$1.class" file!!
+                    val opt = Option.parse(a.slice(2..<a.size)) { key ->
+                        when (key) {
+                            "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
+                            "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
+                            "-t", "t", "--type", "-type", "type" -> Option.TYPE
+                            "--all-media", "-all-media", "all-media" -> Option.EXP_ALL_MEDIA
+                            "--images", "-images", "images", "--image", "-image", "image" -> Option.EXP_IMAGES
+                            "--videos", "-videos", "videos", "--video", "-video", "video" -> Option.EXP_VIDEOS
+                            "--posts", "-posts", "posts", "--post", "-post", "post" -> Option.EXP_POSTS
+                            "--reels", "-reels", "reels", "--reel", "-reel", "reel" -> Option.EXP_REELS
+                            "--story", "-story", "story", "--stories", "-stories", "stories" -> Option.EXP_STORY
+                            "--uploaded-images", "-uploaded-images", "uploaded-images" -> Option.EXP_UPLOADED_IMAGES
+                            "--uploaded-videos", "-uploaded-videos", "uploaded-videos" -> Option.EXP_UPLOADED_VIDEOS
+                            "--voice", "-voice", "voice" -> Option.EXP_VOICE
+                            "--min-date", "-min-date", "min-date" -> Option.EXP_MIN_DATE
+                            "--max-date", "-max-date", "max-date" -> Option.EXP_MAX_DATE
+                            else -> null
+                        }
+                    }
                     listMsg[a[1]]?.forEach { thread ->
                         exporter.export(thread, opt)
                     }
@@ -201,9 +199,9 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                 throw InvalidCommandException("Please enter a username or the REST ID of a user.")
             else try {
                 a[1].toLong()
-                api.call<Rest.UserInfo>(Api.Endpoint.USER_INFO.url.format(a[1]), Rest.UserInfo::class).user
+                SimpleTasks.userInfo(a[1])
             } catch (_: NumberFormatException) {
-                api.call<GraphQl>(Api.Endpoint.PROFILE.url.format(a[1]), GraphQl::class).data!!.user!!
+                SimpleTasks.profileInfo(a[1])
             }.also { u ->
                 println(
                     """
@@ -221,83 +219,14 @@ ${u.biography}
                 profiles[u.username]?.userId = u.id()
             }
 
-            "p", "posts" -> if (a.size == 1) {
-                if (latestUser == null)
-                    throw InvalidCommandException("Please enter a username.")
-                else
-                    profiles[latestUser]!!.posts.fetch()
-            } else {
-                val a1UN = a[1].startsWith("@")
-                val un = (if (a1UN) a[1].substring(1) else latestUser)
-                    ?: throw InvalidCommandException("Please enter a username.")
-                if (un !in profiles) profiles[un] = Profile(un)
-                val p = profiles[un]!!
-                latestUser = un
+            "p", "posts" -> parseProfilePostsCommand(a) { profile -> profile.posts }
 
-                val nextParam = if (a1UN) 2 else 1
-                when (a.getOrNull(nextParam)) {
-                    null -> p.posts.fetch()
-                    "reset" -> p.posts.fetch(true)
-                    else -> {
-                        val optIndex = nextParam + 1
-                        val opt = if (a.size > optIndex)
-                            Option.parse(a.slice(optIndex..<a.size)) { key ->
-                                when (key) {
-                                    "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
-                                    else -> null
-                                }
-                            } else null
-                        p.posts[a[nextParam]]?.forEach { med ->
-                            downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
-                        }
-                    }
-                }
-            }
-
-            "t", "tagged" -> if (a.size == 1) {
-                if (latestUser == null)
-                    throw InvalidCommandException("Please enter a username.")
-                else
-                    profiles[latestUser]!!.tagged.fetch()
-            } else {
-                val a1UN = a[1].startsWith("@")
-                val un = (if (a1UN) a[1].substring(1) else latestUser)
-                    ?: throw InvalidCommandException("Please enter a username.")
-                if (un !in profiles) profiles[un] = Profile(un)
-                val p = profiles[un]!!
-                latestUser = un
-
-                val nextParam = if (a1UN) 2 else 1
-                when (a.getOrNull(nextParam)) {
-                    null -> p.tagged.fetch()
-                    "reset" -> p.tagged.fetch(true)
-                    else -> {
-                        val optIndex = nextParam + 1
-                        val opt = if (a.size > optIndex)
-                            Option.parse(a.slice(optIndex..<a.size)) { key ->
-                                when (key) {
-                                    "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
-                                    else -> null
-                                }
-                            } else null
-                        p.tagged[a[nextParam]]?.forEach { med ->
-                            downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
-                        }
-                    }
-                }
-            }
+            "t", "tagged" -> parseProfilePostsCommand(a) { profile -> profile.tagged }
 
             "q", "quit" -> repeat = false
 
-            "" -> {
-                nothing++
-                if (nothing == 3) repeat = false
-                else continue
-            }
-
             else -> throw InvalidCommandException("Unknown command: ${a[0]}")
         }
-        if (a[0] != "") nothing = 0
 
     } catch (e: Exception) {
         if (e is Utils.InstaToolsException)
@@ -307,6 +236,41 @@ ${u.biography}
 
     api.client.close()
     println("Good luck!")
+}
+
+fun parseProfilePostsCommand(a: Array<String>, lister: (Profile) -> LazyLister<Media>) {
+    if (a.size == 1) {
+        if (latestUser == null)
+            throw InvalidCommandException("Please enter a username.")
+        else
+            lister(profiles[latestUser]!!).fetch()
+    } else {
+        val a1UN = a[1].startsWith("@")
+        val un = (if (a1UN) a[1].substring(1) else latestUser)
+            ?: throw InvalidCommandException("Please enter a username.")
+        if (un !in profiles) profiles[un] = Profile(un)
+        val p = profiles[un]!!
+        latestUser = un
+
+        val nextParam = if (a1UN) 2 else 1
+        when (a.getOrNull(nextParam)) {
+            null -> lister(p).fetch()
+            "reset" -> lister(p).fetch(true)
+            else -> {
+                val optIndex = nextParam + 1
+                val opt = if (a.size > optIndex)
+                    Option.parse(a.slice(optIndex..<a.size)) { key ->
+                        when (key) {
+                            "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
+                            else -> null
+                        }
+                    } else null
+                lister(p)[a[nextParam]]?.forEach { med ->
+                    downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
+                }
+            }
+        }
+    }
 }
 
 class InvalidCommandException(msg: String = "Invalid command!") :
