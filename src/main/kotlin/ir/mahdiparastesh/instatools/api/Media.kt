@@ -22,11 +22,11 @@ data class Media(
     val media_type: Float,
     val number_of_qualities: Float?,
     val organic_tracking_token: String?,
-    val original_height: Float,
-    val original_width: Float,
+    val original_height: Float?, // nullable in tagged carousel items
+    val original_width: Float?, // nullable in tagged carousel items
     val owner: User?,
     val photo_of_you: Boolean?,
-    val pk: String,
+    val pk: String?, // nullable in tagged carousel items
     val product_type: String?,
     val taken_at: Double,
     val user: User?,
@@ -103,8 +103,8 @@ data class Media(
     }
 
     private fun nearestOfList(list: List<Version>, ideal: Float): String? {
-        var nW = original_width
-        var nH = original_height
+        var nW = original_width ?: 0f
+        var nH = original_height ?: 0f
         var nWDif = abs(ideal - nW)
         var nHDif = abs(ideal - nH)
         if (ideal > 0) list.forEach {

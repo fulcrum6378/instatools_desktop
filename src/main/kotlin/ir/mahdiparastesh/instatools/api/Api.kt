@@ -86,7 +86,7 @@ class Api {
         }
         if (System.getenv("debug") == "1") {
             println(text)
-            //FileOutputStream(File("1.json")).use { it.write(text.encodeToByteArray()) }
+            //FileOutputStream(File("Downloads/1.json")).use { it.write(text.encodeToByteArray()) }
         }
         if (response.statusLine.statusCode == 200) return try {
             Gson().fromJson(text, typeToken ?: clazz.java) as JSON

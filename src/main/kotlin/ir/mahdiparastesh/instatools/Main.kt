@@ -282,7 +282,6 @@ ${u.biography}
                             } else null
                         p.tagged[a[nextParam]]?.forEach { med ->
                             downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
-                        // FIXME non-standard Media items, will crash and names will corrupt!
                         }
                     }
                 }
