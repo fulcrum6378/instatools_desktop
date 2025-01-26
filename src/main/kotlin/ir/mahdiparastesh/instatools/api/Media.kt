@@ -63,10 +63,12 @@ data class Media(
 
     fun owner(): User = owner ?: user!!
 
-    fun link() = when (product_type) {
+    fun link(userName: String? = null) = when (product_type) {
         "feed", "carousel_container" -> Utils.POST_LINK.format(code)
         "clips" -> Utils.REEL_LINK.format(code)
-        "story" -> Utils.STORY_LINK.format(owner().username, pk)
+        "story" -> Utils.STORY_LINK.format(userName ?: owner().username, pk)
+        // highlights are considered "story" but they don't have unique links of their own,
+        // also their Media cannot be distinguished from daily stories!
         null -> nearest(BEST)
         else -> throw IllegalStateException("New product type: $product_type ?!?")
     }

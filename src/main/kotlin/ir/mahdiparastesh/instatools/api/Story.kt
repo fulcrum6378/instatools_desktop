@@ -7,11 +7,19 @@ data class Story(
     var items: List<Media>?, // null in highlights tray
     //val latest_reel_media: Double, // time in seconds
     val muted: Boolean?, // null in highlights
-    //val reel_type: String, // "user_reel" or "highlight_reel"
+    val reel_type: String?, // "user_reel" or "highlight_reel", null in highlights tray
     //val seen: Float?, // null in highlights
     val title: String?, // null in stories
-    //val user: User
+    val user: User
 ) {
+
+    fun link(): String = when (reel_type) {
+        "user_reel" -> "https://www.instagram.com/stories/${user.username}/"
+        null, "highlight_reel" ->
+            "https://www.instagram.com/stories/highlights/${id.substringAfter("highlight:")}/"
+
+        else -> throw IllegalArgumentException("Unknown story type: $reel_type")
+    }
 
     data class Cover(
         val cropped_image_version: Url,
