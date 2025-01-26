@@ -24,12 +24,11 @@ enum class Option(val key: String, val value: Any? = null) {
 
     companion object {
         fun parse(
-            raw: String?, selector: ((key: String) -> Option?)
-        ): HashMap<String, String?>? {
-            if (raw == null) return null
+            options: List<String>, selector: ((key: String) -> Option?)
+        ): HashMap<String, String?> {
             val opt = hashMapOf<String, String?>()
-            for (kv in raw.split(" ")) {
-                val kvSplit = if ("=" !in kv) kv.split("=") else null
+            for (kv in options) {
+                val kvSplit = if ("=" in kv) kv.split("=") else null
                 val k = kvSplit?.get(0) ?: kv
                 val addable: Option = selector(k)
                     ?: throw InvalidCommandException("Unknown option \"$k\"!")

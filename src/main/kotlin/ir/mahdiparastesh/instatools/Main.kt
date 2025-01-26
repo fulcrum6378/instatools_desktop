@@ -47,7 +47,7 @@ s, saved                       Continuously list your saved posts.
   s <NUMBER(s)> {OPTIONS}      Download the post in that index.
     -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
     -u, --unsave                         Additionally unsave the post
-  s reset                      Forget the previously loaded saved posts and load them again.
+  s reset                      Forget previously loaded saved posts and load them again.
   s [u|unsave] <NUMBER>        Unsave the post in that index.
   s [r|resave] <NUMBER>        Save the post in that index AGAIN.
 m, messages                    List your direct message threads.
@@ -66,10 +66,18 @@ m, messages                    List your direct message threads.
     --max-date=<DATETIME>                Minimum date for messages to be exported (e.g. --min-date=2024)
   m reset                      Forget the previously loaded threads and load them again.
 u, user <USER|REST_ID>         Show details about an IG account. (e.g. u 8337021434)
-p, posts <USERNAME>            List main posts of a profile. (e.g. p fulcrum6378)
-  p <USERNAME> reset           Forget the previously loaded main posts of a user and load them again.
-t, tagged <USERNAME>           List tagged posts of a profile. (e.g. t fulcrum6378)
-  t <USERNAME> reset           Forget the previously loaded tagged posts of a user and load them again.
+p, posts <@USERNAME>           List main posts of a profile. (`@` IS NECESSARY; e.g. p @fulcrum6378)
+  p, posts                     Load more posts from the latest user.
+  p <@USERNAME> reset          Forget previously loaded main posts of a user and load them again.
+  p reset                      Forget previously loaded main posts of the latest user and load them again.
+  p <NUMBER(s)> {OPTIONS}      Download the post in that index.
+    -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
+t, tagged <@USERNAME>          List tagged posts of a profile. (`@` IS NECESSARY; e.g. t fulcrum6378)
+  t, tagged                    Load more tagged posts from the latest user.
+  t <@USERNAME> reset          Forget previously loaded tagged posts of the latest user and load them again.
+  t reset                      Forget previously loaded tagged posts of the latest user and load them again.
+  t <NUMBER(s)> {OPTIONS}      Download the tagged post in that index.
+    -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
 q, quit                        Quit the program.
 
 >> List of qualities:
@@ -88,7 +96,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
     val listSvd: Saved by lazy { Saved() }
     val listMsg: Direct by lazy { Direct() }
     val profiles = hashMapOf<String, Profile>()
-    var lastUserName: String? = null
+    var latestUser: String? = null
 
     // execute commands
     var repeat = true
@@ -104,7 +112,6 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
             repeat = false
         }
 
-        @Suppress("DuplicatedCode")
         when (a[0]) {
 
             "set" -> when (a.getOrNull(1)) {
@@ -140,12 +147,12 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                     "Please enter a link after \"${a[0]}\"; like \"${a[0]} https://\"..."
                 )
             else if ("/p/" in a[1] || "/reel/" in a[1]) {
-                val opt = Option.parse(a.getOrNull(2)) { key ->
+                val opt = if (a.size > 2) Option.parse(a.slice(2..<a.size)) { key ->
                     when (key) {
                         "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
                         else -> null
                     }
-                }
+                } else null
                 SimpleTasks.handlePostLink(a[1], Option.quality(opt?.get(Option.QUALITY.key)))
             } else
                 throw InvalidCommandException("Only links to Instagram posts and reels are supported!")
@@ -159,17 +166,19 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                     listSvd.saveUnsave(med, a[1] == "u" || a[1] == "unsave")
                 }
 
-                else -> listSvd[a[1]]?.forEach { med ->
-                    val opt = Option.parse(a.getOrNull(2)) { key ->
+                else -> {
+                    val opt = if (a.size > 2) Option.parse(a.slice(2..<a.size)) { key ->
                         when (key) {
                             "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
                             "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
                             else -> null
                         }
+                    } else null
+                    listSvd[a[1]]?.forEach { med ->
+                        downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
+                        if (opt?.contains(Option.UNSAVE.key) == true)
+                            listSvd.saveUnsave(med, true)
                     }
-                    downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
-                    if (opt?.contains(Option.UNSAVE.key) == true)
-                        listSvd.saveUnsave(med, true)
                 }
             }
 
@@ -178,10 +187,13 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
             else when (a[1]) {
                 "reset" -> listMsg.fetch(true)
 
-                else -> listMsg[a[1]]?.forEach { thread ->
-                    val opt = Option.parse(a.getOrNull(2), Option::directExportOptions)
-                        ?: throw InvalidCommandException("Please specify options for the export.")
-                    exporter.export(thread, opt)
+                else -> {
+                    if (a.size == 2) throw InvalidCommandException("Please specify options for the export.")
+                    val opt = Option.parse(a.slice(2..<a.size), Option::directExportOptions)
+                    // FIXME this call creates the "MainKt$main$4$opt$1.class" file!!
+                    listMsg[a[1]]?.forEach { thread ->
+                        exporter.export(thread, opt)
+                    }
                 }
             }
 
@@ -205,40 +217,74 @@ ${u.biography}
 
                 """.trimIndent()
                 )
-                lastUserName = u.username
+                latestUser = u.username
+                profiles[u.username]?.userId = u.id()
             }
 
-            "p", "posts" -> if (a.size < 2) {
-                if (lastUserName == null)
+            "p", "posts" -> if (a.size == 1) {
+                if (latestUser == null)
                     throw InvalidCommandException("Please enter a username.")
                 else
-                    profiles[lastUserName]!!.posts.fetch()
+                    profiles[latestUser]!!.posts.fetch()
             } else {
-                if (a[1] !in profiles) profiles[a[1]] = Profile(a[1])
-                val p = profiles[a[1]]!!
-                lastUserName = a[1]
-                val reset = a.getOrNull(2) == "reset"
-                if (a.size == 2 || reset)
-                    p.posts.fetch(reset)
-                else {
-                    // TODO
+                val a1UN = a[1].startsWith("@")
+                val un = (if (a1UN) a[1].substring(1) else latestUser)
+                    ?: throw InvalidCommandException("Please enter a username.")
+                if (un !in profiles) profiles[un] = Profile(un)
+                val p = profiles[un]!!
+                latestUser = un
+
+                val nextParam = if (a1UN) 2 else 1
+                when (a.getOrNull(nextParam)) {
+                    null -> p.posts.fetch()
+                    "reset" -> p.posts.fetch(true)
+                    else -> {
+                        val optIndex = nextParam + 1
+                        val opt = if (a.size > optIndex)
+                            Option.parse(a.slice(optIndex..<a.size)) { key ->
+                                when (key) {
+                                    "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
+                                    else -> null
+                                }
+                            } else null
+                        p.posts[a[nextParam]]?.forEach { med ->
+                            downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
+                        }
+                    }
                 }
             }
 
-            "t", "tagged" -> if (a.size < 2) {
-                if (lastUserName == null)
+            "t", "tagged" -> if (a.size == 1) {
+                if (latestUser == null)
                     throw InvalidCommandException("Please enter a username.")
                 else
-                    profiles[lastUserName]!!.tagged.fetch()
+                    profiles[latestUser]!!.tagged.fetch()
             } else {
-                if (a[1] !in profiles) profiles[a[1]] = Profile(a[1])
-                val p = profiles[a[1]]!!
-                lastUserName = a[1]
-                val reset = a.getOrNull(2) == "reset"
-                if (a.size == 2 || reset)
-                    p.tagged.fetch(reset)
-                else {
-                    // TODO
+                val a1UN = a[1].startsWith("@")
+                val un = (if (a1UN) a[1].substring(1) else latestUser)
+                    ?: throw InvalidCommandException("Please enter a username.")
+                if (un !in profiles) profiles[un] = Profile(un)
+                val p = profiles[un]!!
+                latestUser = un
+
+                val nextParam = if (a1UN) 2 else 1
+                when (a.getOrNull(nextParam)) {
+                    null -> p.tagged.fetch()
+                    "reset" -> p.tagged.fetch(true)
+                    else -> {
+                        val optIndex = nextParam + 1
+                        val opt = if (a.size > optIndex)
+                            Option.parse(a.slice(optIndex..<a.size)) { key ->
+                                when (key) {
+                                    "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
+                                    else -> null
+                                }
+                            } else null
+                        p.tagged[a[nextParam]]?.forEach { med ->
+                            downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
+                        // FIXME non-standard Media items, will crash and names will corrupt!
+                        }
+                    }
                 }
             }
 

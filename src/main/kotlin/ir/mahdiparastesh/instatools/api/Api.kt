@@ -3,6 +3,7 @@ package ir.mahdiparastesh.instatools.api
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import ir.mahdiparastesh.instatools.util.Utils
+import org.apache.http.ConnectionClosedException
 import org.apache.http.HttpHost
 import org.apache.http.client.config.RequestConfig
 import org.apache.http.client.methods.HttpGet
@@ -78,7 +79,11 @@ class Api {
             throw FailureException(-1)
         }
 
-        val text = EntityUtils.toString(response.entity)
+        val text = try {
+            EntityUtils.toString(response.entity)
+        } catch (_: ConnectionClosedException) {
+            throw FailureException(-2)
+        }
         if (System.getenv("debug") == "1") {
             println(text)
             //FileOutputStream(File("1.json")).use { it.write(text.encodeToByteArray()) }
@@ -87,7 +92,7 @@ class Api {
             Gson().fromJson(text, typeToken ?: clazz.java) as JSON
         } catch (_: JsonSyntaxException) {
             println(text)
-            throw FailureException(-2)
+            throw FailureException(-3)
         } else
             throw FailureException(response.statusLine.statusCode)
     }
@@ -236,7 +241,8 @@ class Api {
     class FailureException(status: Int) : IllegalStateException(
         "API ERROR: " + when (status) {
             -1 -> "Couldn't connect to Instagram!"
-            -2 -> "Invalid response from Instagram!"
+            -2 -> "Connection was broken!"
+            -3 -> "Invalid response from Instagram!"
             302 -> "Found redirection!"
             429 -> "Too many requests!"
             else -> "HTTP error code $status!"
