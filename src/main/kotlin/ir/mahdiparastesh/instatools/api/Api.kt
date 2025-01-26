@@ -9,6 +9,7 @@ import org.apache.http.HttpHost
 import org.apache.http.client.config.RequestConfig
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.client.methods.HttpPost
+import org.apache.http.entity.ByteArrayEntity
 import org.apache.http.entity.StringEntity
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.HttpClients
@@ -26,7 +27,7 @@ import kotlin.reflect.KClass
 
 class Api {
     var client: CloseableHttpClient = createClient()
-    private var cookies = ""
+    var cookies = ""
 
     init {
         Logger.getLogger("org.apache.http.client").setLevel(
@@ -67,24 +68,18 @@ class Api {
         typeToken: java.lang.reflect.Type? = null
     ): JSON {
         val request = (if (isPost) HttpPost(url) else HttpGet(url)).apply {
-            addHeader("accept", "*/*")
-            addHeader("accept-language", "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,es-US;q=0.6,es;q=0.5,ru-RU;q=0.4,ru;q=0.3,de-DE;q=0.2,de;q=0.1,cs-CZ;q=0.1,cs;q=0.1,en-US;q=0.1")
-            addHeader("priority", "u=1, i")
             addHeader("x-asbd-id", "129477")
-            addHeader("x-bloks-version-id", "0e060251e1b0f688757fc85e86223bcf86d771ecddaa2fe9f1d86dabd2eda227")
             if (cookies.contains("csrftoken=")) addHeader(
                 "x-csrftoken",
                 cookies.substringAfter("csrftoken=").substringBefore(";")
             )
-            addHeader("x-fb-friendly-name", "PolarisStoriesV3HighlightsPageQuery")
-            addHeader("x-fb-lsd", "h1DiMkOiHePdJPBzWJzrKO")
             addHeader("x-ig-app-id", "936619743392459")
             addHeader("cookie", cookies)
             if (this is HttpPost && body != null) {
                 addHeader("content-type", "application/x-www-form-urlencoded")
-                entity = StringEntity(body)
+                entity = StringEntity(body, "UTF-8")
                 if (System.getenv("debug") == "1")
-                    println("Post body: $body")
+                    println("Post Body: $body")
             }
         }
         val response = try {
