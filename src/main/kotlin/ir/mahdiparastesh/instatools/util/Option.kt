@@ -38,11 +38,11 @@ enum class Option(val key: String, val value: Any? = null) {
         }
 
         fun quality(value: String? = null): Float {
-            if (value == null) return Media.BEST
+            if (value == null) return Media.Version.BEST
             return when (value) {
-                "h", "high", "original" -> Media.BEST
-                "m", "medium", "med" -> Media.MEDIUM
-                "l", "low" -> Media.WORST
+                "h", "high", "original" -> Media.Version.BEST
+                "m", "medium", "med" -> Media.Version.MEDIUM
+                "l", "low" -> Media.Version.WORST
                 "x" -> try {
                     value.substring(1).toFloat()
                 } catch (_: NumberFormatException) {

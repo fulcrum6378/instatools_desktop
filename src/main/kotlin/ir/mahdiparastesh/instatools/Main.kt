@@ -185,8 +185,9 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
 Full name:        ${u.full_name}
 Username:         @${u.username}
 REST ID:          ${u.id()}
-Pronouns:         ${u.pronouns?.joinToString(", ")}
+Picture:          ${u.picture()}
 Is private?       ${if (u.is_private == true) "Yes" else "No"}
+Pronouns:         ${u.pronouns?.joinToString(", ")}
 Bio:
 ${u.biography}
 
@@ -197,16 +198,16 @@ ${u.biography}
             }
 
             "p", "posts" ->
-                parseProfilePostsCommand(a) { profile -> profile.posts }
+                parseProfileCommand(a) { profile -> profile.posts }
 
             "t", "tagged" ->
-                parseProfilePostsCommand(a) { profile -> profile.tagged }
+                parseProfileCommand(a) { profile -> profile.tagged }
 
             "r", "story" ->
-                parseProfilePostsCommand(a) { profile -> profile.story }
+                parseProfileCommand(a) { profile -> profile.story }
 
             "h", "highlight" ->
-                parseProfilePostsCommand(a) { profile -> profile.highlights }
+                parseProfileCommand(a) { profile -> profile.highlights }
 
             "m", "messages" -> if (a.size == 1)
                 listMsg.fetchSome()
@@ -255,7 +256,7 @@ ${u.biography}
     println("Good luck!")
 }
 
-fun parseProfilePostsCommand(a: Array<String>, lister: (Profile) -> Profile.Section) {
+fun parseProfileCommand(a: Array<String>, lister: (Profile) -> Profile.Section) {
     if (a.size == 1) {
         if (latestUser == null)
             throw InvalidCommandException("Please enter a username.")

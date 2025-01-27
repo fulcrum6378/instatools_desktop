@@ -131,34 +131,21 @@ class Api {
         UNSAVE("https://www.instagram.com/api/v1/web/save/%s/unsave/"),
         SAVE("https://www.instagram.com/api/v1/web/save/%s/save/"),
 
-        // Messaging
+        // Direct
         INBOX("https://www.instagram.com/api/v1/direct_v2/inbox/?cursor=%s"),
         DIRECT("https://www.instagram.com/api/v1/direct_v2/threads/%1\$s/?cursor=%2\$s&limit=%3\$d"),
         SEEN("https://www.instagram.com/api/v1/direct_v2/threads/%1\$s/items/%2\$s/seen/"),
 
-        // Users
+        // Info
         PROFILE_INFO("https://www.instagram.com/api/v1/users/web_profile_info/?username=%s"),
         USER_INFO("https://www.instagram.com/api/v1/users/%s/info/"),
-        SEARCH(
-            "https://www.instagram.com/api/v1/web/search/topsearch/?context=blended&query=%s" +
-                    "&include_reel=false&search_surface=web_top_search"
-        ),
-
-        // Stories & Highlights
         MEDIA_INFO("https://www.instagram.com/api/v1/media/%s/info/"),
-        STORY("https://www.instagram.com/api/v1/feed/user/%s/story/"),
-        HIGHLIGHTS("https://www.instagram.com/api/v1/highlights/%s/highlights_tray/"),
-        REEL_ITEM("https://www.instagram.com/api/v1/feed/reels_media/?reel_ids=%s"),
-        // StoryReel = "Full-Screen Video"; Story { reel, reel, ... }, Highlights { reel, reel, ... }
-        // Adding "media_id=" parameter is of no use, the results are the same!!
 
-        // Others' interactions with others (always use "?count=" for more accurate results)
+        // Friendships (always use "?count=" for more accurate results)
         FOLLOWERS("https://www.instagram.com/api/v1/friendships/%1\$s/followers/?count=200&max_id=%2\$s"),
         FOLLOWING("https://www.instagram.com/api/v1/friendships/%1\$s/following/?count=200&max_id=%2\$s"),
         FRIENDSHIPS_MANY("https://www.instagram.com/api/v1/friendships/show_many/"),
         FRIENDSHIP("https://www.instagram.com/api/v1/friendships/show/%s/"), // GET
-
-        // My interactions with other users
         FOLLOW("https://www.instagram.com/api/v1/friendships/create/%s/"),
         UNFOLLOW("https://www.instagram.com/api/v1/friendships/destroy/%s/"),
         MUTE("https://www.instagram.com/api/v1/friendships/mute_posts_or_story_from_follow/"),
@@ -169,7 +156,7 @@ class Api {
         UNBLOCK("https://www.instagram.com/api/v1/web/friendships/%d/unblock/"),
 
         // Logging in/out
-        SIGN_OUT("https://www.instagram.com/accounts/logout/ajax/")
+        LOGOUT("https://www.instagram.com/accounts/logout/ajax/")
     }
 
     @Suppress(
