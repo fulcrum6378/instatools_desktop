@@ -11,10 +11,10 @@ data class User(
     val is_private: Boolean?,
     val is_unpublished: Boolean?,
     val pk: String?,
-    val profile_pic_url: String,
+    val profile_pic_url: String?,
     val profile_pic_url_hd: String?,
     val pronouns: List<String>?,
-    val username: String,
+    val username: String?,
 ) {
 
     fun visName() = full_name?.ifBlank { username } ?: username

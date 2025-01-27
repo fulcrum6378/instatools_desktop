@@ -1,6 +1,7 @@
 package ir.mahdiparastesh.instatools.util
 
 import ir.mahdiparastesh.instatools.list.Posts
+import ir.mahdiparastesh.instatools.list.Stories
 import ir.mahdiparastesh.instatools.list.Tagged
 
 class Profile(var userName: String) {
@@ -8,6 +9,7 @@ class Profile(var userName: String) {
 
     val posts: Posts by lazy { Posts(this) }
     val tagged: Tagged by lazy { Tagged(this) }
+    val story: Stories by lazy { Stories(this) }
 
     fun requireUserId() {
         if (userId != null) return

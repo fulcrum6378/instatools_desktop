@@ -7,16 +7,6 @@ fun main() {
     val api = Api()
     api.loadCookies()
 
-    api.call<GraphQl>(
-        Api.Endpoint.QUERY.url, GraphQl::class, true,
-        Api.GraphQlQuery.STORY.body("\"2003616263\"")
-    ).data?.xdt_api__v1__feed__reels_media?.reels_media?.forEach { userStory ->
-        userStory.items!!.forEachIndexed { index, story ->
-            println("${index + 1}. " + story.link("euronews_persian"))
-        }
-    }
-    println()
-
     val hls = api.call<GraphQl>(
         Api.Endpoint.QUERY.url, GraphQl::class, true,
         Api.GraphQlQuery.PROFILE_HIGHLIGHTS_TRAY.body("2003616263")

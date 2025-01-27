@@ -4,14 +4,13 @@ import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.Message
 import ir.mahdiparastesh.instatools.api.Rest
-import ir.mahdiparastesh.instatools.util.LazyLister
+import ir.mahdiparastesh.instatools.util.Lister.LazyLister
 
 class Direct : LazyLister<Message.DmThread>() {
 
-    override fun fetch(reset: Boolean) {
-        super.fetch(reset)
+    override fun fetch() {
         api.call<Rest.InboxPage>(
-            Api.Endpoint.INBOX.url.format(if (cursor != null && !reset) cursor else ""), Rest.InboxPage::class,
+            Api.Endpoint.INBOX.url.format(cursor ?: ""), Rest.InboxPage::class,
         ).also { page ->
             for (thread in page.inbox.threads) {
                 println("$index. ${thread.title()}")

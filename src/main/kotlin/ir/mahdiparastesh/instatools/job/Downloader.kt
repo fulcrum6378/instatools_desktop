@@ -23,7 +23,9 @@ import java.net.URI
 class Downloader : Queuer<Downloader.Queued>() {
     override val outputDir = File("./Downloads/")
 
-    fun download(med: Media, idealSize: Float, link: String? = null) {
+    fun download(
+        med: Media, idealSize: Float, link: String? = null, owner: String? = null
+    ) {
         val u = med.owner()
         if (med.carousel_media != null) for (car in med.carousel_media) enqueue(
             Queued(
@@ -31,8 +33,8 @@ class Downloader : Queuer<Downloader.Queued>() {
                 Utils.compileSecondsTS(car.taken_at),
                 car.nearest(idealSize)!!,
                 car.media_type.toInt().toByte(),
-                u.username,
-                med.caption!!.text,
+                u.username ?: owner!!,
+                med.caption?.text,
                 link ?: med.link(),
                 //car.thumb()
             )
@@ -42,8 +44,8 @@ class Downloader : Queuer<Downloader.Queued>() {
                 Utils.compileSecondsTS(med.taken_at),
                 med.nearest(idealSize)!!,
                 med.media_type.toInt().toByte(),
-                u.username,
-                med.caption!!.text,
+                u.username ?: owner!!,
+                med.caption?.text,
                 link ?: med.link(),
                 //med.thumb()
             )
@@ -107,7 +109,7 @@ class Downloader : Queuer<Downloader.Queued>() {
                     }
                 }) // location data is currently not possible with edge post location.
 
-            else -> fos.write(ba) // TODO metadata for videos, exclude PNG and there could also be others
+            else -> fos.write(ba) // TODO metadata for videos, PNG, WEBP, etc?
         }
         fos.close()
         println("Downloaded $fileName")
@@ -120,7 +122,7 @@ class Downloader : Queuer<Downloader.Queued>() {
         val url: String,
         val type: Byte,
         val owner: String,
-        val caption: String,
+        val caption: String?,
         val link: String?,
         //val thumb: String?,
     ) {

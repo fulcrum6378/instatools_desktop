@@ -34,14 +34,32 @@ set timeout <seconds>        Set timeout for normal HTTP requests (not downloads
 d, download <LINK> {OPTIONS}   Download only a post or reel via its official link.
     -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
 s, saved                       Continuously list your saved posts.
-  s <NUMBER(s)> {OPTIONS}      Download the post in that index.
+  s <NUMBER(s)> {OPTIONS}      Download the post in that position.
     -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
     -u, --unsave                         Additionally unsave the post
   s reset                      Forget previously loaded saved posts and load them again.
-  s [u|unsave] <NUMBER>        Unsave the post in that index.
-  s [r|resave] <NUMBER>        Save the post in that index AGAIN.
+  s [u|unsave] <NUMBER>        Unsave the post in that position.
+  s [r|resave] <NUMBER>        Save the post in that position AGAIN.
+  m reset                      Forget the previously loaded threads and load them again.
+u, user <@USERNAME|REST_ID>    Show details about an IG account. (e.g. u 8337021434)
+p, posts <@USERNAME>           List main posts of a profile. (`@` IS NECESSARY; e.g. p @fulcrum6378)
+  p, posts                     Load more posts from the latest user.
+  p <@USERNAME> reset          Forget previously loaded main posts of a user and load them again.
+  p reset                      Forget previously loaded main posts of the latest user and load them again.
+  p <NUMBER(s)> {OPTIONS}      Download the post in that position.
+    -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
+t, tagged <@USERNAME>          List tagged posts of a profile. (`@` IS NECESSARY; e.g. t fulcrum6378)
+  t, tagged                    Load more tagged posts from the latest user.
+  t <@USERNAME> reset          Forget previously loaded tagged posts of the latest user and load them again.
+  t reset                      Forget previously loaded tagged posts of the latest user and load them again.
+  t <NUMBER(s)> {OPTIONS}      Download the tagged post in that position.
+    -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
+r, story <@USERNAME>           List daily story of a profile. (`@` IS NECESSARY; e.g. r @fulcrum6378)
+  r <NUMBER(s)> {OPTIONS}      Download the story item in that position.
+    -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
+h, highlight <@USERNAME>       List highlighted stories of a profile. (`@` IS NECESSARY; e.g. h @fulcrum6378)
 m, messages                    List your direct message threads.
-  m <NUMBER(s)> {OPTIONS}      Export the thread in that index.
+  m <NUMBER(s)> {OPTIONS}      Export the thread in that position.
     -t, --type=<HTML,TXT>                File type of the output export
     --all-media=<no|QUALITY>             Default settings for all media (e.g. --all-media=low)
     --images=<no|QUALITY>                Default settings for all images (e.g. --images=low)
@@ -54,20 +72,6 @@ m, messages                    List your direct message threads.
     --voice=<no|yes>                     Whether voice messages should be downloaded (e.g. --voice=yes)
     --min-date=<DATETIME>                Minimum date for messages to be exported (e.g. --min-date=2025-01-21)
     --max-date=<DATETIME>                Minimum date for messages to be exported (e.g. --min-date=2024)
-  m reset                      Forget the previously loaded threads and load them again.
-u, user <USER|REST_ID>         Show details about an IG account. (e.g. u 8337021434)
-p, posts <@USERNAME>           List main posts of a profile. (`@` IS NECESSARY; e.g. p @fulcrum6378)
-  p, posts                     Load more posts from the latest user.
-  p <@USERNAME> reset          Forget previously loaded main posts of a user and load them again.
-  p reset                      Forget previously loaded main posts of the latest user and load them again.
-  p <NUMBER(s)> {OPTIONS}      Download the post in that index.
-    -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
-t, tagged <@USERNAME>          List tagged posts of a profile. (`@` IS NECESSARY; e.g. t fulcrum6378)
-  t, tagged                    Load more tagged posts from the latest user.
-  t <@USERNAME> reset          Forget previously loaded tagged posts of the latest user and load them again.
-  t reset                      Forget previously loaded tagged posts of the latest user and load them again.
-  t <NUMBER(s)> {OPTIONS}      Download the tagged post in that index.
-    -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
 q, quit                        Quit the program.
 
 >> List of qualities:
@@ -139,9 +143,9 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                 throw InvalidCommandException("Only links to Instagram posts and reels are supported!")
 
             "s", "saved" -> if (a.size == 1)
-                listSvd.fetch()
+                listSvd.fetchSome()
             else when (a[1]) {
-                "reset" -> listSvd.fetch(true)
+                "reset" -> listSvd.fetchSome(true)
 
                 "u", "unsave", "r", "resave" -> listSvd[a[2]]?.forEach { med ->
                     listSvd.saveUnsave(med, a[1] == "u" || a[1] == "unsave")
@@ -163,10 +167,46 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                 }
             }
 
+            "u", "user" -> if (a.size != 2)
+                throw InvalidCommandException("Please enter a username or the REST ID of a user.")
+            else (if (a[1].startsWith("@")) SimpleTasks.profileInfo(a[1].substring(1))
+            else try {
+                a[1].toLong()
+                SimpleTasks.userInfo(a[1])
+            } catch (_: NumberFormatException) {
+                SimpleTasks.profileInfo(a[1])
+            }).also { u ->
+                println(
+                    """
+Full name:        ${u.full_name}
+Username:         @${u.username}
+REST ID:          ${u.id()}
+Pronouns:         ${u.pronouns?.joinToString(", ")}
+Is private?       ${if (u.is_private == true) "Yes" else "No"}
+Bio:
+${u.biography}
+
+                """.trimIndent()
+                )
+                latestUser = u.username
+                profiles[u.username]?.userId = u.id()
+            }
+
+            "p", "posts" ->
+                parseProfilePostsCommand(a, { profile -> profile.posts }) { reset -> fetchSome(reset) }
+
+            "t", "tagged" ->
+                parseProfilePostsCommand(a, { profile -> profile.tagged }) { reset -> fetchSome(reset) }
+
+            "r", "story" ->
+                parseProfilePostsCommand(a, { profile -> profile.story }) { fetchAll() }
+
+            "h", "highlight" -> {}
+
             "m", "messages" -> if (a.size == 1)
-                listMsg.fetch()
+                listMsg.fetchSome()
             else when (a[1]) {
-                "reset" -> listMsg.fetch(true)
+                "reset" -> listMsg.fetchSome(true)
 
                 else -> {
                     if (a.size == 2) throw InvalidCommandException("Please specify options for the export.")
@@ -195,34 +235,6 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                 }
             }
 
-            "u", "user" -> if (a.size != 2)
-                throw InvalidCommandException("Please enter a username or the REST ID of a user.")
-            else try {
-                a[1].toLong()
-                SimpleTasks.userInfo(a[1])
-            } catch (_: NumberFormatException) {
-                SimpleTasks.profileInfo(a[1])
-            }.also { u ->
-                println(
-                    """
-Full name:        ${u.full_name}
-Username:         @${u.username}
-REST ID:          ${u.id()}
-Pronouns:         ${u.pronouns?.joinToString(", ")}
-Is private?       ${if (u.is_private == true) "Yes" else "No"}
-Bio:
-${u.biography}
-
-                """.trimIndent()
-                )
-                latestUser = u.username
-                profiles[u.username]?.userId = u.id()
-            }
-
-            "p", "posts" -> parseProfilePostsCommand(a) { profile -> profile.posts }
-
-            "t", "tagged" -> parseProfilePostsCommand(a) { profile -> profile.tagged }
-
             "q", "quit" -> repeat = false
 
             else -> throw InvalidCommandException("Unknown command: ${a[0]}")
@@ -238,12 +250,16 @@ ${u.biography}
     println("Good luck!")
 }
 
-fun parseProfilePostsCommand(a: Array<String>, lister: (Profile) -> LazyLister<Media>) {
+fun <LIST> parseProfilePostsCommand(
+    a: Array<String>,
+    lister: (Profile) -> LIST,
+    fetch: LIST.(Boolean) -> Unit
+) where LIST : Lister<Media> {
     if (a.size == 1) {
         if (latestUser == null)
             throw InvalidCommandException("Please enter a username.")
         else
-            lister(profiles[latestUser]!!).fetch()
+            lister(profiles[latestUser]!!).fetch(false)
     } else {
         val a1UN = a[1].startsWith("@")
         val un = (if (a1UN) a[1].substring(1) else latestUser)
@@ -254,8 +270,9 @@ fun parseProfilePostsCommand(a: Array<String>, lister: (Profile) -> LazyLister<M
 
         val nextParam = if (a1UN) 2 else 1
         when (a.getOrNull(nextParam)) {
-            null -> lister(p).fetch()
+            null -> lister(p).fetch(false)
             "reset" -> lister(p).fetch(true)
+
             else -> {
                 val optIndex = nextParam + 1
                 val opt = if (a.size > optIndex)
@@ -266,7 +283,7 @@ fun parseProfilePostsCommand(a: Array<String>, lister: (Profile) -> LazyLister<M
                         }
                     } else null
                 lister(p)[a[nextParam]]?.forEach { med ->
-                    downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
+                    downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)), owner = p.userName)
                 }
             }
         }

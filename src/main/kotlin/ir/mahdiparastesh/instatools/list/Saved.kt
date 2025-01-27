@@ -5,15 +5,14 @@ import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.api.Rest
-import ir.mahdiparastesh.instatools.util.LazyLister
+import ir.mahdiparastesh.instatools.util.Lister.LazyLister
 import ir.mahdiparastesh.instatools.util.Utils
 
 class Saved : LazyLister<Media>() {
 
-    override fun fetch(reset: Boolean) {
-        super.fetch(reset)
+    override fun fetch() {
         api.call<Rest.LazyList<Rest.SavedItem>>(
-            Api.Endpoint.SAVED.url + (if (cursor != null && !reset) "?max_id=$cursor" else ""),
+            Api.Endpoint.SAVED.url + (cursor?.let { "?max_id=$it" } ?: ""),
             Rest.LazyList::class, typeToken = object : TypeToken<Rest.LazyList<Rest.SavedItem>>() {}.type,
         ).also { lazyList ->
             for (i in lazyList.items) {

@@ -4,17 +4,16 @@ import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.GraphQl
 import ir.mahdiparastesh.instatools.api.Media
-import ir.mahdiparastesh.instatools.util.LazyLister
+import ir.mahdiparastesh.instatools.util.Lister.LazyLister
 import ir.mahdiparastesh.instatools.util.Profile
 
 class Tagged(private val p: Profile) : LazyLister<Media>() {
 
-    override fun fetch(reset: Boolean) {
-        super.fetch(reset)
+    override fun fetch() {
         p.requireUserId()
         val page = api.call<GraphQl>(
             Api.Endpoint.QUERY.url, GraphQl::class, true,
-            if (cursor == null && !reset)
+            if (cursor == null)
                 Api.GraphQlQuery.PROFILE_TAGGED.body(p.userId!!, "36")
             else
                 Api.GraphQlQuery.PROFILE_TAGGED_CURSORED.body(p.userId!!, "36", cursor!!)
