@@ -198,16 +198,16 @@ ${u.biography}
             }
 
             "p", "posts" ->
-                parseProfileCommand(a) { profile -> profile.posts }
+                profileCommand(a) { profile -> profile.posts }
 
             "t", "tagged" ->
-                parseProfileCommand(a) { profile -> profile.tagged }
+                profileCommand(a) { profile -> profile.tagged }
 
             "r", "story" ->
-                parseProfileCommand(a) { profile -> profile.story }
+                profileCommand(a) { profile -> profile.story }
 
             "h", "highlight" ->
-                parseProfileCommand(a) { profile -> profile.highlights }
+                profileCommand(a) { profile -> profile.highlights }
 
             "m", "messages" -> if (a.size == 1)
                 listMsg.fetchSome()
@@ -256,7 +256,7 @@ ${u.biography}
     println("Good luck!")
 }
 
-fun parseProfileCommand(a: Array<String>, lister: (Profile) -> Profile.Section) {
+fun profileCommand(a: Array<String>, lister: (Profile) -> Profile.Section) {
     if (a.size == 1) {
         if (latestUser == null)
             throw InvalidCommandException("Please enter a username.")

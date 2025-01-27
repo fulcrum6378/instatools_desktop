@@ -10,6 +10,7 @@ import org.apache.commons.imaging.formats.jpeg.exif.ExifRewriter
 import org.apache.commons.imaging.formats.tiff.constants.ExifTagConstants
 import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants
 import org.apache.commons.imaging.formats.tiff.write.TiffOutputSet
+import org.apache.http.ConnectionClosedException
 import org.apache.http.client.config.RequestConfig
 import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.methods.HttpGet
@@ -54,6 +55,7 @@ class Downloader : Queuer<Downloader.Queued>() {
     }
 
     override fun handle(q: Queued) {
+        // prepare the path
         val extension = q.extension()
         val fileName = q.fileName(extension)
         val file = File(outputDir, fileName)
@@ -61,10 +63,20 @@ class Downloader : Queuer<Downloader.Queued>() {
             println("File `${fileName}` already exists! Overwrite? (y / any)")
             if (readlnOrNull() !in arrayOf("y", "Y", "yes")) return
         }
+
+        // download the file
+        var ba: ByteArray? = null
         var response: CloseableHttpResponse? = null
-        while (response?.statusLine?.statusCode != 200) {
-            if (response != null)
-                println("Retrying for ${q.link}")
+        var retry = 0
+        while (ba == null) {
+            if (response != null) {
+                if (retry > 5)
+                    throw FailureException()
+                else {
+                    println("Retrying for ${q.link}")
+                    retry++
+                }
+            }
 
             val request = HttpGet(q.url).apply {
                 config = RequestConfig.custom().setConnectTimeout(
@@ -77,13 +89,18 @@ class Downloader : Queuer<Downloader.Queued>() {
             try {
                 response = api.client.execute(request)
             } catch (_: IOException) {
+                continue
+            }
+            if (response.statusLine.statusCode != 200)
                 throw FailureException()
+            ba = try {
+                response.entity.content.readAllBytes()
+            } catch (_: ConnectionClosedException) {
+                null
             }
         }
-        if (response.statusLine.statusCode != 200)
-            throw FailureException()
 
-        val ba = response.entity.content.readAllBytes()
+        // save the file
         val fos = FileOutputStream(file)
         when (extension) {
             "jpg" -> ExifRewriter().updateExifMetadataLossless(
