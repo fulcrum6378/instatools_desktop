@@ -16,10 +16,12 @@ data class Story(
     fun link(): String = when (reel_type) {
         "user_reel" -> "https://www.instagram.com/stories/${user.username}/"
         null, "highlight_reel" ->
-            "https://www.instagram.com/stories/highlights/${id.substringAfter("highlight:")}/"
+            "https://www.instagram.com/stories/highlights/${highlightId()}/" // after "highlight:"
 
         else -> throw IllegalArgumentException("Unknown story type: $reel_type")
     }
+
+    fun highlightId(): String = id.substring(10)
 
     data class Cover(
         val cropped_image_version: Url,

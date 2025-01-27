@@ -5,11 +5,11 @@ import ir.mahdiparastesh.instatools.Context.downloader
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.GraphQl
 import ir.mahdiparastesh.instatools.api.Media
-import ir.mahdiparastesh.instatools.util.Lister.OneTimeLister
+import ir.mahdiparastesh.instatools.util.Lister
 import ir.mahdiparastesh.instatools.util.Option
 import ir.mahdiparastesh.instatools.util.Profile
 
-class Stories(override val p: Profile) : OneTimeLister<Media>(), Profile.Section {
+class Stories(override val p: Profile) : Lister<Media>(), Profile.Section {
     override val numberOfClauses: Int = 1
 
     override fun fetch() {
@@ -29,13 +29,14 @@ class Stories(override val p: Profile) : OneTimeLister<Media>(), Profile.Section
     }
 
     override fun fetch(reset: Boolean) {
-        fetchAll()
+        if (list.isNotEmpty()) list.clear()
+        fetch()
     }
 
     override fun download(
-        a: Array<String>, offsetSinceItemNumbers: Int, opt: HashMap<String, String?>?
+        a: Array<String>, offsetOfClauses: Int, opt: HashMap<String, String?>?
     ) {
-        this[a[offsetSinceItemNumbers]]?.forEach { med ->
+        this[a[offsetOfClauses]]?.forEach { med ->
             downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)), owner = p.userName)
         }
     }

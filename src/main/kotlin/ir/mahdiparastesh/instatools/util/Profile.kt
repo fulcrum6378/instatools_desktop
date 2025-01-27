@@ -28,6 +28,6 @@ class Profile(var userName: String) {
 
         fun fetch(reset: Boolean)
 
-        fun download(a: Array<String>, offsetSinceItemNumbers: Int, opt: HashMap<String, String?>?)
+        fun download(a: Array<String>, offsetOfClauses: Int, opt: HashMap<String, String?>?)
     }
 }

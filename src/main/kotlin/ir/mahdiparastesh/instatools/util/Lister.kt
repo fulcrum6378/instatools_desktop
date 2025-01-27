@@ -3,7 +3,7 @@ package ir.mahdiparastesh.instatools.util
 import ir.mahdiparastesh.instatools.InvalidCommandException
 
 abstract class Lister<Item> {
-    protected val list: ArrayList<Item> = arrayListOf()
+    protected open val list: ArrayList<Item> = arrayListOf()
 
     protected abstract fun fetch()
 
@@ -52,13 +52,6 @@ abstract class Lister<Item> {
             cursor = null
             index = 1
             println("End of list.")
-        }
-    }
-
-    abstract class OneTimeLister<Item> : Lister<Item>() {
-        fun fetchAll() {
-            if (list.isNotEmpty()) list.clear()
-            fetch()
         }
     }
 }

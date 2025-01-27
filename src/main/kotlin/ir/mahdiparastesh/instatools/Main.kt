@@ -5,7 +5,10 @@ import ir.mahdiparastesh.instatools.Context.downloader
 import ir.mahdiparastesh.instatools.Context.exporter
 import ir.mahdiparastesh.instatools.list.Direct
 import ir.mahdiparastesh.instatools.list.Saved
-import ir.mahdiparastesh.instatools.util.*
+import ir.mahdiparastesh.instatools.util.Option
+import ir.mahdiparastesh.instatools.util.Profile
+import ir.mahdiparastesh.instatools.util.SimpleTasks
+import ir.mahdiparastesh.instatools.util.Utils
 
 val listSvd: Saved by lazy { Saved() }
 val listMsg: Direct by lazy { Direct() }
@@ -51,12 +54,14 @@ t, tagged <@USERNAME>          List tagged posts of a profile. (`@` IS NECESSARY
   t, tagged                    Load more tagged posts from the latest user.
   t <@USERNAME> reset          Forget previously loaded tagged posts of the latest user and load them again.
   t reset                      Forget previously loaded tagged posts of the latest user and load them again.
-  t <NUMBER(s)> {OPTIONS}      Download the tagged post in that position.
+  t <NUMBERS> {OPTIONS}        Download the tagged post in that position.
     -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
 r, story <@USERNAME>           List daily story of a profile. (`@` IS NECESSARY; e.g. r @fulcrum6378)
   r <NUMBER(s)> {OPTIONS}      Download the story item in that position.
     -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
 h, highlight <@USERNAME>       List highlighted stories of a profile. (`@` IS NECESSARY; e.g. h @fulcrum6378)
+  h <HL-ID> <NUMBERS> {OPTIONS}Download the highlight story item in that position.
+    -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
 m, messages                    List your direct message threads.
   m <NUMBER(s)> {OPTIONS}      Export the thread in that position.
     -t, --type=<HTML,TXT>                File type of the output export
