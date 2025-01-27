@@ -3,7 +3,6 @@ package ir.mahdiparastesh.instatools
 import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.Context.downloader
 import ir.mahdiparastesh.instatools.Context.exporter
-import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.list.Direct
 import ir.mahdiparastesh.instatools.list.Saved
 import ir.mahdiparastesh.instatools.util.*
@@ -193,15 +192,16 @@ ${u.biography}
             }
 
             "p", "posts" ->
-                parseProfilePostsCommand(a, { profile -> profile.posts }) { reset -> fetchSome(reset) }
+                parseProfilePostsCommand(a) { profile -> profile.posts }
 
             "t", "tagged" ->
-                parseProfilePostsCommand(a, { profile -> profile.tagged }) { reset -> fetchSome(reset) }
+                parseProfilePostsCommand(a) { profile -> profile.tagged }
 
             "r", "story" ->
-                parseProfilePostsCommand(a, { profile -> profile.story }) { fetchAll() }
+                parseProfilePostsCommand(a) { profile -> profile.story }
 
-            "h", "highlight" -> {}
+            "h", "highlight" ->
+                parseProfilePostsCommand(a) { profile -> profile.highlights }
 
             "m", "messages" -> if (a.size == 1)
                 listMsg.fetchSome()
@@ -250,11 +250,7 @@ ${u.biography}
     println("Good luck!")
 }
 
-fun <LIST> parseProfilePostsCommand(
-    a: Array<String>,
-    lister: (Profile) -> LIST,
-    fetch: LIST.(Boolean) -> Unit
-) where LIST : Lister<Media> {
+fun parseProfilePostsCommand(a: Array<String>, lister: (Profile) -> Profile.Section) {
     if (a.size == 1) {
         if (latestUser == null)
             throw InvalidCommandException("Please enter a username.")
@@ -271,10 +267,11 @@ fun <LIST> parseProfilePostsCommand(
         val nextParam = if (a1UN) 2 else 1
         when (a.getOrNull(nextParam)) {
             null -> lister(p).fetch(false)
-            "reset" -> lister(p).fetch(true)
+            "reset" -> lister(p).fetch(true) // reset can be mistakenly called OneTimeListers
 
             else -> {
-                val optIndex = nextParam + 1
+                val sect = lister(p)
+                val optIndex = nextParam + sect.numberOfClauses
                 val opt = if (a.size > optIndex)
                     Option.parse(a.slice(optIndex..<a.size)) { key ->
                         when (key) {
@@ -282,9 +279,8 @@ fun <LIST> parseProfilePostsCommand(
                             else -> null
                         }
                     } else null
-                lister(p)[a[nextParam]]?.forEach { med ->
-                    downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)), owner = p.userName)
-                }
+
+                lister(p).download(a, nextParam, opt)
             }
         }
     }

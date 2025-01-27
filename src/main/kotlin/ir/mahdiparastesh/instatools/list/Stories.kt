@@ -1,13 +1,16 @@
 package ir.mahdiparastesh.instatools.list
 
 import ir.mahdiparastesh.instatools.Context.api
+import ir.mahdiparastesh.instatools.Context.downloader
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.GraphQl
 import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.util.Lister.OneTimeLister
+import ir.mahdiparastesh.instatools.util.Option
 import ir.mahdiparastesh.instatools.util.Profile
 
-class Stories(private val p: Profile) : OneTimeLister<Media>() {
+class Stories(override val p: Profile) : OneTimeLister<Media>(), Profile.Section {
+    override val numberOfClauses: Int = 1
 
     override fun fetch() {
         p.requireUserId()
@@ -19,9 +22,21 @@ class Stories(private val p: Profile) : OneTimeLister<Media>() {
         val media = reels.firstOrNull()?.items
         if (media.isNullOrEmpty())
             println("This user has no stories.")
-        else media.forEachIndexed { index, r ->
-            println("${index + 1}. " + r.link(p.userName))
+        else media.forEachIndexed { i, r ->
+            println("${i + 1}. " + r.link(p.userName))
             add(r)
+        }
+    }
+
+    override fun fetch(reset: Boolean) {
+        fetchAll()
+    }
+
+    override fun download(
+        a: Array<String>, offsetSinceItemNumbers: Int, opt: HashMap<String, String?>?
+    ) {
+        this[a[offsetSinceItemNumbers]]?.forEach { med ->
+            downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)), owner = p.userName)
         }
     }
 }

@@ -13,7 +13,7 @@ fun main() {
     ).data?.highlights?.edges
     if (hls == null) throw Api.FailureException(-3)
 
-    if (hls.isEmpty()) println("No highlighted stories.")
+    if (hls.isEmpty()) println("This user has no highlighted stories.")
     else hls.forEachIndexed { index, tray ->
         println(
             "${index + 1}. ${tray.node.link()} -" +
@@ -22,15 +22,15 @@ fun main() {
         )
     }
 
-    /*hls.map { "\"${it.node.id}\"" }
+    val ids = hls.map { "\"${it.node.id}\"" }
     api.call<GraphQl>(
         Api.Endpoint.QUERY.url, GraphQl::class, true,
-        Api.GraphQlQuery.HIGHLIGHTS.body(hls.joinToString(","), hls[0])
+        Api.GraphQlQuery.HIGHLIGHTS.body(/*ids.joinToString(",")*/ids[0], ids[0])
     ).data?.xdt_api__v1__feed__reels_media__connection?.also { page ->
         page.edges.forEach { tray ->
             tray.node.items!!.forEachIndexed { index, story ->
                 println("${tray.node.id} : ${index + 1}. " + story.link(""))
             }
         }
-    } ?: throw Api.FailureException(-3)*/
+    } ?: throw Api.FailureException(-3)
 }

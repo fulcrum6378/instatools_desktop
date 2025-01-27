@@ -1,13 +1,16 @@
 package ir.mahdiparastesh.instatools.list
 
 import ir.mahdiparastesh.instatools.Context.api
+import ir.mahdiparastesh.instatools.Context.downloader
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.GraphQl
 import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.util.Lister.LazyLister
+import ir.mahdiparastesh.instatools.util.Option
 import ir.mahdiparastesh.instatools.util.Profile
 
-class Tagged(private val p: Profile) : LazyLister<Media>() {
+class Tagged(override val p: Profile) : LazyLister<Media>(), Profile.Section {
+    override val numberOfClauses: Int = 1
 
     override fun fetch() {
         p.requireUserId()
@@ -31,5 +34,17 @@ class Tagged(private val p: Profile) : LazyLister<Media>() {
             cursor = page.edges.last().node.pk
             println("Enter `t ${p.userName}` again or just `t` to load more tagged posts from their profile...")
         } else endOfList()
+    }
+
+    override fun fetch(reset: Boolean) {
+        fetchSome(reset)
+    }
+
+    override fun download(
+        a: Array<String>, offsetSinceItemNumbers: Int, opt: HashMap<String, String?>?
+    ) {
+        this[a[offsetSinceItemNumbers]]?.forEach { med ->
+            downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
+        }
     }
 }
