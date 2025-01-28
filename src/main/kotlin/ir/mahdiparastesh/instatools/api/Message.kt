@@ -1,7 +1,5 @@
 package ir.mahdiparastesh.instatools.api
 
-import ir.mahdiparastesh.instatools.util.Utils
-
 @Suppress("PropertyName")
 data class Message(
     val item_id: String,
@@ -42,14 +40,14 @@ data class Message(
 ) {
 
     data class Inbox(
-        var threads: List<DmThread>,
-        var has_older: Boolean,
-        var oldest_cursor: String?,
+        val threads: List<DmThread>,
+        val has_older: Boolean,
+        val oldest_cursor: String?,
     )
 
     data class DmThread(
         var has_older: Boolean,
-        val items: List<Message>,
+        var items: List<Message>,
         val thread_id: String,
         val thread_v2_id: String,
         val users: List<User>,
@@ -58,9 +56,6 @@ data class Message(
         val folder: Float,
     ) {
         fun title() = if (!is_group) users.getOrNull(0)?.visName() else thread_title
-
-        fun exportFileName() =
-            "Exported ${title()}_${Utils.fileDateTime(Utils.now())}"
     }
 
     data class Reactions(val emojis: List<Emoji>)
@@ -127,7 +122,7 @@ data class Message(
         override val message: String?,
     ) : PlaceHolder
 
-    data class Voice(val media: VoiceMedia)
+    data class Voice(val media: VoiceMedia?)
 
     data class VoiceMedia(val audio: Audio)
 

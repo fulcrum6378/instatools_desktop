@@ -6,6 +6,7 @@ import java.util.*
 object Utils {
     const val APP_NAME = "InstaTools"
     const val MAHDI = "https://mahdiparastesh.ir/"
+    const val PROFILE = "https://www.instagram.com/%s/"
     const val POST_LINK = "https://www.instagram.com/p/%s/"
     const val REEL_LINK = "https://www.instagram.com/reel/%s/"
     const val STORY_LINK = "https://www.instagram.com/stories/%1\$s/%2\$s/"
@@ -19,9 +20,12 @@ object Utils {
 
     fun now() = Calendar.getInstance().timeInMillis
 
+    fun calendar(time: Long): Calendar =
+        Calendar.getInstance().apply { timeInMillis = time }
+
     /** @return a datetime text to be used in a file name. */
     fun fileDateTime(time: Long): String {
-        val cal = Calendar.getInstance().apply { timeInMillis = time }
+        val cal = calendar(time)
         return "${cal[Calendar.YEAR]}${z(cal[Calendar.MONTH] + 1)}" +
                 "${z(cal[Calendar.DAY_OF_MONTH])}_${z(cal[Calendar.HOUR_OF_DAY])}" +
                 "${z(cal[Calendar.MINUTE])}${z(cal[Calendar.SECOND])}"

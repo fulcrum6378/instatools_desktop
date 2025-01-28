@@ -31,4 +31,9 @@ interface Rest {
         //val has_pending_top_requests: Boolean,
         override val status: String
     ) : Rest
+
+    data class InboxThread(
+        val thread: Message.DmThread,
+        override val status: String
+    ) : Rest
 }
