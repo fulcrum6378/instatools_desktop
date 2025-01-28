@@ -12,8 +12,8 @@ class Saved : LazyLister<Media>() {
 
     override fun fetch() {
         api.call<Rest.LazyList<Rest.SavedItem>>(
-            Api.Endpoint.SAVED.url + (cursor?.let { "?max_id=$it" } ?: ""),
-            Rest.LazyList::class, typeToken = object : TypeToken<Rest.LazyList<Rest.SavedItem>>() {}.type,
+            Api.Endpoint.SAVED.url + (cursor?.let { "?max_id=$it" } ?: ""), Rest.LazyList::class,
+            typeToken = TypeToken.getParameterized(Rest.LazyList::class.java, Rest.SavedItem::class.java).type,
         ).also { lazyList ->
             for (i in lazyList.items) {
                 println(

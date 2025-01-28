@@ -5,7 +5,11 @@ import com.google.gson.reflect.TypeToken
 
 object RelayPrefetchedStreamCache {
     private const val HTML_TAG_SCRIPT_JSON = "<script type=\"application/json\""
-    private val gsonType = object : TypeToken<Map<String, List<List<Any>>>>() {}.type
+    private val gsonType = TypeToken.getParameterized(
+        Map::class.java, String::class.java, TypeToken.getParameterized(
+            List::class.java, TypeToken.getParameterized(List::class.java, Any::class.java).type
+        ).type
+    ).type
 
     @Suppress("UNCHECKED_CAST")
     fun crawl(
@@ -20,7 +24,7 @@ object RelayPrefetchedStreamCache {
             read = read.substringAfter(HTML_TAG_SCRIPT_JSON).substringAfter(">")
             json = read.substringBefore("</script>")
             if (json.contains("RelayPrefetchedStreamCache") && predicate(json)) {
-                gson = (GsonBuilder().setLenient().create().fromJson(json, gsonType))
+                gson = (GsonBuilder().setLenient().create().fromJson(json, gsonType) as Map<String, List<List<Any>>>)
                 gson = (gson["require"]!![0][3] as List<Map<String, Any?>>)[0]["__bbox"]!!
                         as Map<String, List<List<Any>>>
                 tuple = gson["require"]!![0][3] as List<Any>

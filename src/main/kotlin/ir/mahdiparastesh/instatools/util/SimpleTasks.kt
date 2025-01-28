@@ -27,7 +27,7 @@ object SimpleTasks {
                 println("Media ID: $medId")
             val singleItemList = api.call<Rest.LazyList<Media>>(
                 Api.Endpoint.MEDIA_INFO.url.format(medId), Rest.LazyList::class,
-                typeToken = object : TypeToken<Rest.LazyList<Media>>() {}.type,
+                typeToken = TypeToken.getParameterized(Rest.LazyList::class.java, Media::class.java).type,
             )
             downloader.download(singleItemList.items.first(), idealSize, link)
         } else

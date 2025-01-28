@@ -28,55 +28,60 @@ Copyright © Mahdi Parastesh - All Rights Reserved.
     if (interactive) println(
         """
 >> List of settings:
-set cookies {PATH}           Load the required cookies from a path. (defaults to `./cookies.txt`)
+set cookies {PATH}           Load the required cookies from a path. (default: `./cookies.txt`)
 set proxy {URL}              Set an HTTP proxy (e.g. `set proxy http://127.0.0.1:8580/`)
 set timeout <seconds>        Set timeout for normal HTTP requests (not downloads) (e.g. `set timeout 10`)
 
 >> List of commands:
 d, download <LINK> {OPTIONS}   Download only a post or reel via its official link.
-    -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
+    -q, --quality=<QUALITY>              A valid quality value (e.g. `-q=high`) (default: `high`)
 s, saved                       Continuously list your saved posts.
   s <NUMBER(s)> {OPTIONS}      Download the post in that position.
-    -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
+    -q, --quality=<QUALITY>              A valid quality value (e.g. `-q=high`) (default: `high`)
     -u, --unsave                         Additionally unsave the post
   s reset                      Forget previously loaded saved posts and load them again.
   s [u|unsave] <NUMBER>        Unsave the post in that position.
   s [r|resave] <NUMBER>        Save the post in that position AGAIN.
   m reset                      Forget the previously loaded threads and load them again.
-u, user <@USERNAME|REST_ID>    Show details about an IG account. (e.g. u 8337021434)
-p, posts <@USERNAME>           List main posts of a profile. (`@` IS NECESSARY; e.g. p @fulcrum6378)
+u, user <@USERNAME|REST_ID>    Show details about an IG account. (e.g. `u 8337021434`)
+p, posts <@USERNAME>           List main posts of a profile. (`@` IS NECESSARY; e.g. `p @fulcrum6378`)
   p, posts                     Load more posts from the latest user.
   p <@USERNAME> reset          Forget previously loaded main posts of a user and load them again.
   p reset                      Forget previously loaded main posts of the latest user and load them again.
   p <NUMBER(s)> {OPTIONS}      Download the post in that position.
-    -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
-t, tagged <@USERNAME>          List tagged posts of a profile. (`@` IS NECESSARY; e.g. t fulcrum6378)
+    -q, --quality=<QUALITY>              A valid quality value (e.g. `-q=high`) (default: `high`)
+t, tagged <@USERNAME>          List tagged posts of a profile. (`@` IS NECESSARY; e.g. `t fulcrum6378`)
   t, tagged                    Load more tagged posts from the latest user.
   t <@USERNAME> reset          Forget previously loaded tagged posts of the latest user and load them again.
   t reset                      Forget previously loaded tagged posts of the latest user and load them again.
   t <NUMBERS> {OPTIONS}        Download the tagged post in that position.
-    -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
-r, story <@USERNAME>           List daily story of a profile. (`@` IS NECESSARY; e.g. r @fulcrum6378)
+    -q, --quality=<QUALITY>              A valid quality value (e.g. `-q=high`) (default: `high`)
+r, story <@USERNAME>           List daily story of a profile. (`@` IS NECESSARY; e.g. `r @fulcrum6378`)
   r <NUMBER(s)> {OPTIONS}      Download the story item in that position.
-    -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
-h, highlight <@USERNAME>       List highlighted stories of a profile. (`@` IS NECESSARY; e.g. h @fulcrum6378)
+    -q, --quality=<QUALITY>              A valid quality value (e.g. `-q=high`) (default: `high`)
+h, highlight <@USERNAME>       List highlighted stories of a profile. (`@` IS NECESSARY; e.g. `h @fulcrum6378`)
   h <HL-ID> <NUMBERS> {OPTIONS}Download the highlight story item in that position.
-    -q, --quality=<QUALITY>              A valid quality value (e.g. -q=high) (defaults to high)
+    -q, --quality=<QUALITY>              A valid quality value (e.g. `-q=high`) (default: `high`)
 m, messages                    List your direct message threads.
   m <NUMBER(s)> {OPTIONS}      Export the thread in that position.
     -t, --type=<HTML,TXT>                File type of the output export
-    --all-media=<no|QUALITY>             Default settings for all media (e.g. --all-media=low)
-    --images=<no|QUALITY>                Default settings for all images (e.g. --images=low)
-    --videos=<no|thumb|QUALITY>          Default settings for all videos (e.g. --videos=thumb)
-    --posts=<no|QUALITY>                 Settings for shared posts (e.g. --posts=no)
-    --reels=<no|thumb|QUALITY>           Settings for shared reels (e.g. --reels=no)
-    --story=<no|thumb|QUALITY>           Settings for shared stories and highlights (e.g. --story=no)
-    --uploaded-images=<no|QUALITY>       Settings for directly uploaded images  (e.g. --uploaded-images=high)
-    --uploaded-videos=<no|thumb|QUALITY> Settings for directly uploaded videos  (e.g. --uploaded-videos=high)
-    --voice=<no|yes>                     Whether voice messages should be downloaded (e.g. --voice=yes)
-    --min-date=<DATETIME>                Minimum date for messages to be exported (e.g. --min-date=2025-01-21)
-    --max-date=<DATETIME>                Minimum date for messages to be exported (e.g. --min-date=2024)
+    --all-media=<no|QUALITY>             Default settings for all media (e.g. `--all-media=low`)
+    --images=<no|QUALITY>                Default settings for all images (e.g. `--images=low`)
+    --videos=<no|thumb|QUALITY>          Default settings for all videos (e.g. `--videos=thumb`)
+    --posts=<no|QUALITY>                 Settings for shared posts (e.g. `--posts=no`)
+    --reels=<no|thumb|QUALITY>           Settings for shared reels (e.g. `--reels=no`)
+    --story=<no|thumb|QUALITY>           Settings for shared stories and highlights (e.g. `--story=no`)
+    --uploaded-images=<no|QUALITY>       Settings for directly uploaded images  (e.g. `--uploaded-images=high`)
+    --uploaded-videos=<no|thumb|QUALITY> Settings for directly uploaded videos  (e.g. `--uploaded-videos=high`)
+    --voice=<no|yes>                     Whether voice messages should be downloaded (e.g. `--voice=yes`)
+    --min-date=<DATETIME>                Minimum date for messages to be exported (e.g. `--min-date=2025-01-21`)
+    --max-date=<DATETIME>                Minimum date for messages to be exported (e.g. `--min-date=2024`)
 q, quit                        Quit the program.
+
+>> Numeric patterns for selecting items:
+- `1-5` means 1 up to 5.
+- `1,5` means 1 and 5.
+- `1-10,15` means 1 up to 10 plus 15 (total 11 items).
 
 >> List of qualities:
 h, high                        Highest available quality (original)
@@ -98,7 +103,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
         val a: Array<String>
         if (interactive) {
             println("Type a command: ")
-            a = readlnOrNull()?.split(" ")?.toTypedArray() ?: continue
+            a = readlnOrNull()?.trim()?.split(" ")?.toTypedArray() ?: continue
             if (a.isEmpty()) continue
         } else {
             a = args
@@ -131,7 +136,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                 null -> throw InvalidCommandException("Invalid setting!")
             }
 
-            "d", "download" -> if (a.size >= 2)
+            "d", "download" -> if (a.size == 1)
                 throw InvalidCommandException(
                     "Please enter a link after \"${a[0]}\"; like \"${a[0]} https://\"..."
                 )

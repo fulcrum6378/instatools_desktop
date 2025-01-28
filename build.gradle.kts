@@ -1,7 +1,7 @@
-group = "ir.mahdiparastesh"
-version = "2.2.5"
-
 plugins { kotlin("jvm") version "2.1.0" }
+
+group = "ir.mahdiparastesh"
+version = "2.3.0"
 
 repositories { mavenCentral() }
 
@@ -11,6 +11,8 @@ dependencies {
     implementation("org.apache.httpcomponents:httpclient:4.5.14")
     implementation("org.apache.httpcomponents:httpcore:4.4.16")
 }
+
+kotlin { jvmToolchain(23) }
 
 tasks.jar {
     manifest {
