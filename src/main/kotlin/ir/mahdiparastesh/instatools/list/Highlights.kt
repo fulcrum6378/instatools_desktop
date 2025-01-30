@@ -13,11 +13,13 @@ import ir.mahdiparastesh.instatools.util.Profile
 class Highlights(override val p: Profile) : Lister<Media>(), Profile.Section {
     private val trays: HashMap<String, Story> = hashMapOf()
     private var currentTray: String? = null
-    override val list: ArrayList<Media>
+    override var list: ArrayList<Media>?
         get() = trays[currentTray!!]!!.items!! as ArrayList
+        set(_) {}
     override val numberOfClauses: Int = 2
 
     override fun fetch() {
+        super.fetch()
         p.requireUserId()
         val hls = api.call<GraphQl>(
             Api.Endpoint.QUERY.url, GraphQl::class, true,
@@ -65,7 +67,7 @@ class Highlights(override val p: Profile) : Lister<Media>(), Profile.Section {
         }
         if (a.size == offsetOfClauses + 1)
             println("This tray contains ${trays[currentTray!!]!!.items!!.size} items.")
-        else this[a[offsetOfClauses + 1]]?.forEach { med ->
+        else this[a[offsetOfClauses + 1]].forEach { med ->
             downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)), owner = p.userName)
         }
     }

@@ -3,30 +3,37 @@ package ir.mahdiparastesh.instatools.util
 import ir.mahdiparastesh.instatools.InvalidCommandException
 
 abstract class Lister<Item> {
-    protected open val list: ArrayList<Item> = arrayListOf()
+    protected open var list: ArrayList<Item>? = null
 
-    protected abstract fun fetch()
-
-    protected open fun add(item: Item) {
-        list.add(item)
+    protected open fun fetch() {
+        if (list == null) list = arrayListOf()
     }
 
-    operator fun get(index: String): List<Item>? = try {
+    protected open fun add(item: Item) {
+        list!!.add(item)
+    }
+
+    operator fun get(index: String): List<Item> {
+        if (list == null) fetch()
+        if (list?.isEmpty() == true)
+            throw InvalidCommandException("The list is empty!")
         val arr = arrayListOf<Item>()
-        var spd: String
-        for (separated in index.split(",")) {
-            spd = separated.trim()
-            if ("-" !in spd)
-                arr.add(list[spd.toInt() - 1])
-            else {
-                val range = spd.split("-")
-                for (r in (range.first().trim().toInt() - 1)..<range.last().trim().toInt())
-                    arr.add(list[r])
+        try {
+            var spd: String
+            for (separated in index.split(",")) {
+                spd = separated.trim()
+                if ("-" !in spd)
+                    arr.add(list!![spd.toInt() - 1])
+                else {
+                    val range = spd.split("-")
+                    for (r in (range.first().trim().toInt() - 1)..<range.last().trim().toInt())
+                        arr.add(list!![r])
+                }
             }
+        } catch (e: Exception) {
+            throw InvalidCommandException("The number you entered is incorrect! (${e::class.simpleName})")
         }
-        arr
-    } catch (e: Exception) {
-        throw InvalidCommandException("The number you entered is incorrect! (${e::class.simpleName})")
+        return arr
     }
 
     abstract class LazyLister<Item> : Lister<Item>() {
@@ -39,7 +46,7 @@ abstract class Lister<Item> {
                 cursor = null
                 index = 1
             }
-            if (cursor == null) list.clear()
+            if (cursor == null) list?.clear()
             fetch()
         }
 
@@ -53,5 +60,9 @@ abstract class Lister<Item> {
             index = 1
             println("End of list.")
         }
+    }
+
+    interface Likable<Item> {
+        fun like(item: Item)
     }
 }

@@ -13,6 +13,7 @@ class Stories(override val p: Profile) : Lister<Media>(), Profile.Section {
     override val numberOfClauses: Int = 1
 
     override fun fetch() {
+        super.fetch()
         p.requireUserId()
         val reels = api.call<GraphQl>(
             Api.Endpoint.QUERY.url, GraphQl::class, true, Api.GraphQlQuery.STORY.body(p.userId!!)
@@ -29,14 +30,14 @@ class Stories(override val p: Profile) : Lister<Media>(), Profile.Section {
     }
 
     override fun fetch(reset: Boolean) {
-        if (list.isNotEmpty()) list.clear()
+        if (list?.isNotEmpty() == true) list?.clear()
         fetch()
     }
 
     override fun download(
         a: Array<String>, offsetOfClauses: Int, opt: HashMap<String, String?>?
     ) {
-        this[a[offsetOfClauses]]?.forEach { med ->
+        this[a[offsetOfClauses]].forEach { med ->
             downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)), owner = p.userName)
         }
     }

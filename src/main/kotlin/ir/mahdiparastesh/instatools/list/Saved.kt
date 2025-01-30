@@ -6,11 +6,13 @@ import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.api.Rest
 import ir.mahdiparastesh.instatools.util.Lister.LazyLister
+import ir.mahdiparastesh.instatools.util.Lister.Likable
 import ir.mahdiparastesh.instatools.util.Utils
 
-class Saved : LazyLister<Media>() {
+class Saved : LazyLister<Media>(), Likable<Media> {
 
     override fun fetch() {
+        super.fetch()
         api.call<Rest.LazyList<Rest.SavedItem>>(
             Api.Endpoint.SAVED.url + (cursor?.let { "?max_id=$it" } ?: ""), Rest.LazyList::class,
             typeToken = TypeToken.getParameterized(Rest.LazyList::class.java, Rest.SavedItem::class.java).type,
@@ -39,5 +41,9 @@ class Saved : LazyLister<Media>() {
             println("Successfully ${if (unsave) "unsaved" else "saved"} ${med.link()}")
         else
             System.err.println("Couldn't ${if (unsave) "unsave" else "save"} this post!")
+    }
+
+    override fun like(item: Media) {
+        TODO("Not yet implemented")
     }
 }

@@ -38,7 +38,8 @@ d, download <LINK> {OPTIONS}   Download only a post or reel via its official lin
 s, saved                       Continuously list your saved posts.
   s <NUMBER(s)> {OPTIONS}      Download the post in that position.
     -q, --quality=<QUALITY>              A valid quality value (e.g. `-q=high`) (default: `high`)
-    -u, --unsave                         Additionally unsave the post
+    -u, --unsave                         Additionally unsave the post.
+    -l, --like                           Ensure that the post is liked.
   s reset                      Forget previously loaded saved posts and load them again.
   s [u|unsave] <NUMBER>        Unsave the post in that position.
   s [r|resave] <NUMBER>        Save the post in that position AGAIN.
@@ -50,18 +51,22 @@ p, posts <@USERNAME>           List main posts of a profile. (`@` IS NECESSARY; 
   p reset                      Forget previously loaded main posts of the latest user and load them again.
   p <NUMBER(s)> {OPTIONS}      Download the post in that position.
     -q, --quality=<QUALITY>              A valid quality value (e.g. `-q=high`) (default: `high`)
+    -l, --like                           Ensure that the post is liked.
 t, tagged <@USERNAME>          List tagged posts of a profile. (`@` IS NECESSARY; e.g. `t fulcrum6378`)
   t, tagged                    Load more tagged posts from the latest user.
   t <@USERNAME> reset          Forget previously loaded tagged posts of the latest user and load them again.
   t reset                      Forget previously loaded tagged posts of the latest user and load them again.
   t <NUMBERS> {OPTIONS}        Download the tagged post in that position.
     -q, --quality=<QUALITY>              A valid quality value (e.g. `-q=high`) (default: `high`)
+    -l, --like                           Ensure that the tagged post is liked.
 r, story <@USERNAME>           List daily story of a profile. (`@` IS NECESSARY; e.g. `r @fulcrum6378`)
   r <NUMBER(s)> {OPTIONS}      Download the story item in that position.
     -q, --quality=<QUALITY>              A valid quality value (e.g. `-q=high`) (default: `high`)
+    -l, --like                           Ensure that the story is liked.
 h, highlight <@USERNAME>       List highlighted stories of a profile. (`@` IS NECESSARY; e.g. `h @fulcrum6378`)
   h <HL-ID> <NUMBERS> {OPTIONS}Download the highlight story item in that position.
     -q, --quality=<QUALITY>              A valid quality value (e.g. `-q=high`) (default: `high`)
+    -l, --like                           Ensure that the highlighted story is liked.
 m, messages                    List your direct message threads.
   m <NUMBER(s)> {OPTIONS}      Export the thread in that position.
     -t, --type=<HTML,TXT>                File type of the output export
@@ -156,22 +161,25 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
             else when (a[1]) {
                 "reset" -> listSvd.fetchSome(true)
 
-                "u", "unsave", "r", "resave" -> listSvd[a[2]]?.forEach { med ->
+                "u", "unsave", "r", "resave" -> listSvd[a[2]].forEach { med ->
                     listSvd.saveUnsave(med, a[1] == "u" || a[1] == "unsave")
                 }
 
                 else -> {
                     val opt = if (a.size > 2) Option.parse(a.slice(2..<a.size)) { key ->
                         when (key) {
-                            "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
                             "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
+                            "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
+                            "-l", "l", "--like", "-like", "like" -> Option.LIKE
                             else -> null
                         }
                     } else null
-                    listSvd[a[1]]?.forEach { med ->
+                    listSvd[a[1]].forEach { med ->
                         downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
                         if (opt?.contains(Option.UNSAVE.key) == true)
                             listSvd.saveUnsave(med, true)
+                        if (opt?.contains(Option.LIKE.key) == true)
+                            listSvd.like(med)
                     }
                 }
             }
@@ -240,7 +248,7 @@ ${u.biography}
                             else -> null
                         }
                     }
-                    listMsg[a[1]]?.forEach { thread ->
+                    listMsg[a[1]].forEach { thread ->
                         exporter.export(thread, opt)
                     }
                 }
@@ -287,6 +295,7 @@ fun profileCommand(a: Array<String>, lister: (Profile) -> Profile.Section) {
                     Option.parse(a.slice(optIndex..<a.size)) { key ->
                         when (key) {
                             "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
+                            "-l", "l", "--like", "-like", "like" -> Option.LIKE
                             else -> null
                         }
                     } else null

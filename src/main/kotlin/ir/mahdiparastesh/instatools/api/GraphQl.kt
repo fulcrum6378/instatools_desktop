@@ -14,6 +14,7 @@ data class GraphQl(
         val xdt_api__v1__feed__user_timeline_graphql_connection: Page<Media>?, // profile posts
         val xdt_api__v1__feed__reels_media: Story.Wrapper?, // daily stories
         val xdt_api__v1__feed__reels_media__connection: Page<Story>?, // highlighted stories
+        val xdt_api__v1__media__media_id__like: Liked?, // like
         //val xdt_api__v1__media__shortcode__web_info: MediaShortcodeWebInfo?,
         val xdt_api__v1__usertags__user_id__feed_connection: Page<Media>?, // tagged posts
     )
@@ -31,4 +32,6 @@ data class GraphQl(
         //val has_previous_page: Boolean,
         //val start_cursor: String?,
     )
+
+    data class Liked(val __typename: String)
 }

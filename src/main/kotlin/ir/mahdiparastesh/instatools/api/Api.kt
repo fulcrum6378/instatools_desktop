@@ -128,8 +128,6 @@ class Api {
 
         // Saving
         SAVED("https://www.instagram.com/api/v1/feed/saved/posts/"),
-        UNSAVE("https://www.instagram.com/api/v1/web/save/%s/unsave/"),
-        SAVE("https://www.instagram.com/api/v1/web/save/%s/save/"),
 
         // Direct
         INBOX("https://www.instagram.com/api/v1/direct_v2/inbox/?cursor=%s"),
@@ -154,6 +152,10 @@ class Api {
         UNRESTRICT("https://www.instagram.com/api/v1/web/restrict_action/unrestrict/"),
         BLOCK("https://www.instagram.com/api/v1/web/friendships/%d/block/"),
         UNBLOCK("https://www.instagram.com/api/v1/web/friendships/%d/unblock/"),
+
+        // Posts
+        SAVE("https://www.instagram.com/api/v1/web/save/%s/save/"),
+        UNSAVE("https://www.instagram.com/api/v1/web/save/%s/unsave/"),
 
         // Logging in/out
         LOGOUT("https://www.instagram.com/accounts/logout/ajax/")
@@ -242,6 +244,22 @@ class Api {
                     "\"reel_ids\":[%1\$s]," +
                     "\"first\":3," +
                     "\"last\":2" +
+                    "}"
+        ),
+
+        /**
+         * usePolarisLikeMediaLikeMutation
+         * @param media_id [Media]::pk
+         * @param ranking_info_token
+         */
+        LIKE_POST(
+            "8552604541488484",
+            "{" +
+                    "\"media_id\":\"%1\$s\"" + // ,
+                    //"\"container_module\":\"feed_timeline\"," +
+                    //"\"inventory_source\":\"media_or_ad\"," +
+                    //"\"ranking_info_token\":\"%2\$s\"," +
+                    //"\"nav_chain\":\"PolarisFeedRoot:feedPage:1:via_cold_start\"" +
                     "}"
         );
 

@@ -6,6 +6,7 @@ import ir.mahdiparastesh.instatools.api.Media
 enum class Option(val key: String, val value: Any? = null) {
     QUALITY("q"),
     UNSAVE("u"),
+    LIKE("l"),
     TYPE("t"),
 
     // exporting

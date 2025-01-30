@@ -9,6 +9,7 @@ import ir.mahdiparastesh.instatools.util.Lister.LazyLister
 class Direct : LazyLister<Message.DmThread>() {
 
     override fun fetch() {
+        super.fetch()
         api.call<Rest.InboxPage>(
             Api.Endpoint.INBOX.url.format(cursor ?: ""), Rest.InboxPage::class,
         ).also { page ->

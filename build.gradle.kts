@@ -1,7 +1,7 @@
 plugins { kotlin("jvm") version "2.1.0" }
 
 group = "ir.mahdiparastesh"
-version = "2.3.0"
+version = "2.3.4"
 
 repositories { mavenCentral() }
 
