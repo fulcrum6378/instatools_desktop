@@ -61,8 +61,4 @@ abstract class Lister<Item> {
             println("End of list.")
         }
     }
-
-    interface Likable<Item> {
-        fun like(item: Item)
-    }
 }

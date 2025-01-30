@@ -6,10 +6,9 @@ import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.api.Rest
 import ir.mahdiparastesh.instatools.util.Lister.LazyLister
-import ir.mahdiparastesh.instatools.util.Lister.Likable
 import ir.mahdiparastesh.instatools.util.Utils
 
-class Saved : LazyLister<Media>(), Likable<Media> {
+class Saved : LazyLister<Media>() {
 
     override fun fetch() {
         super.fetch()
@@ -41,9 +40,5 @@ class Saved : LazyLister<Media>(), Likable<Media> {
             println("Successfully ${if (unsave) "unsaved" else "saved"} ${med.link()}")
         else
             System.err.println("Couldn't ${if (unsave) "unsave" else "save"} this post!")
-    }
-
-    override fun like(item: Media) {
-        TODO("Not yet implemented")
     }
 }

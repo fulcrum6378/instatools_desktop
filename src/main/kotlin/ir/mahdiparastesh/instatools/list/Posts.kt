@@ -4,10 +4,12 @@ import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.Context.downloader
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.GraphQl
+import ir.mahdiparastesh.instatools.api.GraphQlQuery
 import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.util.Lister.LazyLister
 import ir.mahdiparastesh.instatools.util.Option
 import ir.mahdiparastesh.instatools.util.Profile
+import ir.mahdiparastesh.instatools.util.SimpleTasks
 
 class Posts(override val p: Profile) : LazyLister<Media>(), Profile.Section {
     override val numberOfClauses: Int = 1
@@ -16,7 +18,7 @@ class Posts(override val p: Profile) : LazyLister<Media>(), Profile.Section {
         super.fetch()
         val page = api.call<GraphQl>(
             Api.Endpoint.QUERY.url, GraphQl::class, true,
-            Api.GraphQlQuery.PROFILE_POSTS.body(p.userName, "33", cursor.toString())
+            GraphQlQuery.PROFILE_POSTS.body(p.userName, "33", cursor.toString())
         ).data?.xdt_api__v1__feed__user_timeline_graphql_connection
         if (page == null) throw Api.FailureException(-3)
         if (p.userId == null && page.edges.isNotEmpty())
@@ -41,6 +43,8 @@ class Posts(override val p: Profile) : LazyLister<Media>(), Profile.Section {
     ) {
         this[a[offsetOfClauses]].forEach { med ->
             downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
+            if (opt?.contains(Option.LIKE.key) == true)
+                SimpleTasks.likePost(med)
         }
     }
 }

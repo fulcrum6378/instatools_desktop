@@ -4,10 +4,12 @@ import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.Context.downloader
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.GraphQl
+import ir.mahdiparastesh.instatools.api.GraphQlQuery
 import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.util.Lister.LazyLister
 import ir.mahdiparastesh.instatools.util.Option
 import ir.mahdiparastesh.instatools.util.Profile
+import ir.mahdiparastesh.instatools.util.SimpleTasks
 
 class Tagged(override val p: Profile) : LazyLister<Media>(), Profile.Section {
     override val numberOfClauses: Int = 1
@@ -18,9 +20,9 @@ class Tagged(override val p: Profile) : LazyLister<Media>(), Profile.Section {
         val page = api.call<GraphQl>(
             Api.Endpoint.QUERY.url, GraphQl::class, true,
             if (cursor == null)
-                Api.GraphQlQuery.PROFILE_TAGGED.body(p.userId!!, "36")
+                GraphQlQuery.PROFILE_TAGGED.body(p.userId!!, "36")
             else
-                Api.GraphQlQuery.PROFILE_TAGGED_CURSORED.body(p.userId!!, "36", cursor!!)
+                GraphQlQuery.PROFILE_TAGGED_CURSORED.body(p.userId!!, "36", cursor!!)
         ).data?.xdt_api__v1__usertags__user_id__feed_connection
         if (page == null) throw Api.FailureException(-3)
 
@@ -46,6 +48,8 @@ class Tagged(override val p: Profile) : LazyLister<Media>(), Profile.Section {
     ) {
         this[a[offsetOfClauses]].forEach { med ->
             downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
+            if (opt?.contains(Option.LIKE.key) == true)
+                SimpleTasks.likePost(med)
         }
     }
 }

@@ -43,4 +43,19 @@ object SimpleTasks {
         api.call<GraphQl>(Api.Endpoint.PROFILE_INFO.url.format(userName), GraphQl::class).data
             ?.let { it.user!! }
             ?: throw Api.FailureException(-3)
+
+    /** Likes a post. */
+    fun likePost(med: Media) {
+        if (med.has_liked == true) {
+            println("Already liked ${med.link()}")
+            return; }
+        val pk = med.pk ?: med.id.substringBefore("_")
+        val gql = api.call<GraphQl>(
+            Api.Endpoint.QUERY.url, GraphQl::class, true, GraphQlQuery.LIKE_POST.body(pk)
+        )
+        if (gql.data == null)
+            System.err.println("Could not like ${med.link()}")
+        else
+            println("Successfully liked ${med.link()}")
+    }
 }

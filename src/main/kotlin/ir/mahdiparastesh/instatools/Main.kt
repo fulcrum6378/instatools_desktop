@@ -179,7 +179,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                         if (opt?.contains(Option.UNSAVE.key) == true)
                             listSvd.saveUnsave(med, true)
                         if (opt?.contains(Option.LIKE.key) == true)
-                            listSvd.like(med)
+                            SimpleTasks.likePost(med)
                     }
                 }
             }

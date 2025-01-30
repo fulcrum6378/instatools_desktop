@@ -5,34 +5,35 @@ import kotlin.math.abs
 
 @Suppress("PropertyName")
 data class Media(
-    val can_reply: Boolean?,
+    //val can_reply: Boolean?,
     val caption: Caption?,
     val carousel_media: List<Media>?,
-    val carousel_media_count: Float?,
-    val carousel_media_ids: List<String>?,
-    val coauthor_producers: List<User>?,
+    //val carousel_media_count: Float?,
+    //val carousel_media_ids: List<String>?,
+    //val coauthor_producers: List<User>?,
     val code: String?,
-    val comment_count: Float?,
+    //val comment_count: Float?,
     val has_audio: Boolean?,
+    val has_liked: Boolean?,
     val id: String, // <media ID>_<user ID>
-    val invited_coauthor_producers: List<User>?,
+    //val invited_coauthor_producers: List<User>?,
     val image_versions2: ImageVersions2,
-    val like_count: Double?,
-    val location: Map<String, Any?>?,
+    //val like_count: Double?,
+    //val location: Map<String, Any?>?,
     val media_type: Float,
-    val number_of_qualities: Float?,
-    val organic_tracking_token: String?,
+    //val number_of_qualities: Float?,
+    //val organic_tracking_token: String?,
     val original_height: Float?, // nullable in tagged carousel items
     val original_width: Float?, // nullable in tagged carousel items
     val owner: User?,
-    val photo_of_you: Boolean?,
+    //val photo_of_you: Boolean?,
     val pk: String?, // nullable in tagged carousel items
     val product_type: String?,
     val taken_at: Double,
     val user: User?,
     val video_dash_manifest: String?,
     val video_versions: List<Version>?,
-    val view_count: Double?,
+    //val view_count: Double?,
 ) {
 
     fun owner(): User = owner ?: user!!

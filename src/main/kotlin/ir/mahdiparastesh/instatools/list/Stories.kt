@@ -4,6 +4,7 @@ import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.Context.downloader
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.GraphQl
+import ir.mahdiparastesh.instatools.api.GraphQlQuery
 import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.util.Lister
 import ir.mahdiparastesh.instatools.util.Option
@@ -16,7 +17,7 @@ class Stories(override val p: Profile) : Lister<Media>(), Profile.Section {
         super.fetch()
         p.requireUserId()
         val reels = api.call<GraphQl>(
-            Api.Endpoint.QUERY.url, GraphQl::class, true, Api.GraphQlQuery.STORY.body(p.userId!!)
+            Api.Endpoint.QUERY.url, GraphQl::class, true, GraphQlQuery.STORY.body(p.userId!!)
         ).data?.xdt_api__v1__feed__reels_media?.reels_media
         if (reels == null) throw Api.FailureException(-3)
 
@@ -39,6 +40,9 @@ class Stories(override val p: Profile) : Lister<Media>(), Profile.Section {
     ) {
         this[a[offsetOfClauses]].forEach { med ->
             downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)), owner = p.userName)
+            if (opt?.contains(Option.LIKE.key) == true) {
+                // TODO like a story
+            }
         }
     }
 }

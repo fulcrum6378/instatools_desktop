@@ -2,10 +2,7 @@ package ir.mahdiparastesh.instatools.list
 
 import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.Context.downloader
-import ir.mahdiparastesh.instatools.api.Api
-import ir.mahdiparastesh.instatools.api.GraphQl
-import ir.mahdiparastesh.instatools.api.Media
-import ir.mahdiparastesh.instatools.api.Story
+import ir.mahdiparastesh.instatools.api.*
 import ir.mahdiparastesh.instatools.util.Lister
 import ir.mahdiparastesh.instatools.util.Option
 import ir.mahdiparastesh.instatools.util.Profile
@@ -23,7 +20,7 @@ class Highlights(override val p: Profile) : Lister<Media>(), Profile.Section {
         p.requireUserId()
         val hls = api.call<GraphQl>(
             Api.Endpoint.QUERY.url, GraphQl::class, true,
-            Api.GraphQlQuery.PROFILE_HIGHLIGHTS_TRAY.body(p.userId!!)
+            GraphQlQuery.PROFILE_HIGHLIGHTS_TRAY.body(p.userId!!)
         ).data?.highlights?.edges
         if (hls == null) throw Api.FailureException(-3)
 
@@ -57,7 +54,7 @@ class Highlights(override val p: Profile) : Lister<Media>(), Profile.Section {
             val apiId = "\"highlight:${currentTray}\""
             val page = api.call<GraphQl>(
                 Api.Endpoint.QUERY.url, GraphQl::class, true,
-                Api.GraphQlQuery.HIGHLIGHTS.body(apiId, apiId)
+                GraphQlQuery.HIGHLIGHTS.body(apiId, apiId)
             ).data?.xdt_api__v1__feed__reels_media__connection
                 ?: throw Api.FailureException(-3)
             page.edges.forEach { tray ->
@@ -66,9 +63,12 @@ class Highlights(override val p: Profile) : Lister<Media>(), Profile.Section {
             }
         }
         if (a.size == offsetOfClauses + 1)
-            println("This tray contains ${trays[currentTray!!]!!.items!!.size} items.")
+            println("This tray contains only ${trays[currentTray!!]!!.items!!.size} items.")
         else this[a[offsetOfClauses + 1]].forEach { med ->
             downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)), owner = p.userName)
+            if (opt?.contains(Option.LIKE.key) == true) {
+                // TODO like a story
+            }
         }
     }
 }
