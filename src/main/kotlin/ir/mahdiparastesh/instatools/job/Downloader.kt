@@ -117,7 +117,7 @@ class Downloader : Queuer<Downloader.Queued>() {
                         add(TiffTagConstants.TIFF_TAG_COPYRIGHT, "IG: @${q.owner}")
                     }
                     orCreateExifDirectory.apply {
-                        q.caption.also {
+                        q.caption?.also {
                             removeField(ExifTagConstants.EXIF_TAG_USER_COMMENT)
                             add(ExifTagConstants.EXIF_TAG_USER_COMMENT, it)
                         }
