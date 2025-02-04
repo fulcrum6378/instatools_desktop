@@ -44,7 +44,7 @@ class Posts(override val p: Profile) : LazyLister<Media>(), Profile.Section {
         this[a[offsetOfClauses]].forEach { med ->
             downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
             if (opt?.contains(Option.LIKE.key) == true)
-                SimpleTasks.likePost(med)
+                SimpleTasks.likeMedia(med, GraphQlQuery.LIKE_POST)
         }
     }
 }

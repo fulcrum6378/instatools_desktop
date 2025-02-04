@@ -10,7 +10,7 @@ fun main() {
 
     val res = api.call<GraphQl>(
         Api.Endpoint.QUERY.url, GraphQl::class, true,
-        GraphQlQuery.LIKE_POST.body("3556229450513837363")
+        GraphQlQuery.UNLIKE_STORY.body("3560051330863552587")
     )
     if (res.data == null) throw InvalidCommandException("Could not like!")
     else println("Liked!")

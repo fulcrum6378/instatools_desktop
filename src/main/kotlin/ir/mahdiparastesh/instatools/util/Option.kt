@@ -5,11 +5,12 @@ import ir.mahdiparastesh.instatools.api.Media
 
 enum class Option(val key: String, val value: Any? = null) {
     QUALITY("q"),
-    UNSAVE("u"),
+    UNSAVE("us"),
     LIKE("l"),
-    TYPE("t"),
+    UNLIKE("ul"),
 
     // exporting
+    EXP_TYPE("t"),
     EXP_ALL_MEDIA("all-media"),
     EXP_IMAGES("images"),
     EXP_VIDEOS("videos"),

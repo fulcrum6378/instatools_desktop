@@ -2,7 +2,9 @@ package ir.mahdiparastesh.instatools.api
 
 import java.net.URLEncoder
 
-@Suppress("PrivatePropertyName", "SpellCheckingInspection", "KDocUnresolvedReference", "unused")
+@Suppress(
+    "PrivatePropertyName", "SpellCheckingInspection", "KDocUnresolvedReference", "unused"
+)
 enum class GraphQlQuery(
     private val doc_id: String,
     private val variables: String,
@@ -93,6 +95,28 @@ enum class GraphQlQuery(
     LIKE_POST(
         "8552604541488484",
         "{\"media_id\":\"%s\"}"
+    ),
+
+    /**
+     * usePolarisStoriesV3LikeMutationLikeMutation
+     * @param media_id [Media]::pk
+     *
+     * Applicable for both daily and highlighted stories.
+     */
+    LIKE_STORY(
+        "7324313080956832",
+        "{\"mediaId\":\"%s\"}"
+    ),
+
+    /**
+     * usePolarisStoriesV3LikeMutationUnlikeMutation
+     * @param media_id [Media]::pk
+     *
+     * Applicable for both daily and highlighted stories.
+     */
+    UNLIKE_STORY(
+        "6826730164093779",
+        "{\"mediaId\":\"%s\"}"
     );
 
     fun body(vararg params: String) =

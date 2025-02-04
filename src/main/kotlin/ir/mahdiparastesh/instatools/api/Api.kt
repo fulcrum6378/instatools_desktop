@@ -155,7 +155,8 @@ class Api {
         // Posts
         SAVE("https://www.instagram.com/api/v1/web/save/%s/save/"),
         UNSAVE("https://www.instagram.com/api/v1/web/save/%s/unsave/"),
-        UNLIKE("https://www.instagram.com/api/v1/web/likes/%s/unlike/"),// LIKE has been moved to GraphQl!
+        LIKE_POST("https://www.instagram.com/api/v1/web/likes/%s/like/"),
+        UNLIKE_POST("https://www.instagram.com/api/v1/web/likes/%s/unlike/"),
 
         // Logging in/out
         LOGOUT("https://www.instagram.com/accounts/logout/ajax/")

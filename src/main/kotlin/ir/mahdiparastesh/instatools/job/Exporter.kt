@@ -26,10 +26,10 @@ class Exporter : Queuer<Exporter.Exportable>() {
         Exportable(
             "Exported ${thread.title()}_${Utils.fileDateTime(Utils.now())}",
             thread,
-            when (opt[Option.TYPE.key]) {
+            when (opt[Option.EXP_TYPE.key]) {
                 "HTML", "html", "htm", "web" -> Method.HTML
                 "TXT", "txt", "TEXT", "text" -> Method.TEXT
-                else -> throw InvalidCommandException("Unsupported export method: ${opt[Option.TYPE.key]}")
+                else -> throw InvalidCommandException("Unsupported export method: ${opt[Option.EXP_TYPE.key]}")
             },
             setting(allMedia ?: opt[Option.EXP_IMAGES.key]),
             setting(allMedia ?: opt[Option.EXP_VIDEOS.key]),

@@ -3,6 +3,7 @@ package ir.mahdiparastesh.instatools
 import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.Context.downloader
 import ir.mahdiparastesh.instatools.Context.exporter
+import ir.mahdiparastesh.instatools.api.GraphQlQuery
 import ir.mahdiparastesh.instatools.list.Direct
 import ir.mahdiparastesh.instatools.list.Saved
 import ir.mahdiparastesh.instatools.util.Option
@@ -41,8 +42,12 @@ s, saved                       Continuously list your saved posts.
     -u, --unsave                         Additionally unsave the post.
     -l, --like                           Ensure that the post is liked.
   s reset                      Forget previously loaded saved posts and load them again.
-  s [u|unsave] <NUMBER>        Unsave the post in that position.
-  s [r|resave] <NUMBER>        Save the post in that position AGAIN.
+  s [u|unsave] <N> {OPTIONS}   Unsave the post in that position.
+    --unlike                             Ensure that the post is unliked.
+    -l, --like                           Ensure that the post is liked.
+  s [r|resave] <N> {OPTIONS}   Save the post in that position AGAIN.
+    --unlike                             Ensure that the post is unliked.
+    -l, --like                           Ensure that the post is liked.
   m reset                      Forget the previously loaded threads and load them again.
 u, user <@USERNAME|REST_ID>    Show details about an IG account. (e.g. `u 8337021434`)
 p, posts <@USERNAME>           List main posts of a profile. (`@` IS NECESSARY; e.g. `p @fulcrum6378`)
@@ -161,8 +166,23 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
             else when (a[1]) {
                 "reset" -> listSvd.fetchSome(true)
 
-                "u", "unsave", "r", "resave" -> listSvd[a[2]].forEach { med ->
-                    listSvd.saveUnsave(med, a[1] == "u" || a[1] == "unsave")
+                "u", "unsave", "r", "resave" -> if (a.size < 3)
+                    throw InvalidCommandException("Please enter some numbers.")
+                else {
+                    val opt = if (a.size > 3) Option.parse(a.slice(3..<a.size)) { key ->
+                        when (key) {
+                            "-l", "l", "--like", "-like", "like" -> Option.LIKE
+                            "--unlike", "-unlike", "unlike" -> Option.UNLIKE
+                            else -> null
+                        }
+                    } else null
+                    listSvd[a[2]].forEach { med ->
+                        listSvd.saveUnsave(med, a[1] == "u" || a[1] == "unsave")
+                        if (opt?.contains(Option.LIKE.key) == true)
+                            SimpleTasks.likeMedia(med, GraphQlQuery.LIKE_POST)
+                        else if (opt?.contains(Option.UNLIKE.key) == true)
+                            SimpleTasks.likePost(med, true)
+                    }
                 }
 
                 else -> {
@@ -179,7 +199,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                         if (opt?.contains(Option.UNSAVE.key) == true)
                             listSvd.saveUnsave(med, true)
                         if (opt?.contains(Option.LIKE.key) == true)
-                            SimpleTasks.likePost(med)
+                            SimpleTasks.likeMedia(med, GraphQlQuery.LIKE_POST)
                     }
                 }
             }
@@ -210,17 +230,13 @@ ${u.biography}
                 profiles[u.username]?.userId = u.id()
             }
 
-            "p", "posts" ->
-                profileCommand(a) { profile -> profile.posts }
+            "p", "posts" -> profileCommand(a) { profile -> profile.posts }
 
-            "t", "tagged" ->
-                profileCommand(a) { profile -> profile.tagged }
+            "t", "tagged" -> profileCommand(a) { profile -> profile.tagged }
 
-            "r", "story" ->
-                profileCommand(a) { profile -> profile.story }
+            "r", "story" -> profileCommand(a) { profile -> profile.story }
 
-            "h", "highlight" ->
-                profileCommand(a) { profile -> profile.highlights }
+            "h", "highlight" -> profileCommand(a) { profile -> profile.highlights }
 
             "m", "messages" -> if (a.size == 1)
                 listMsg.fetchSome()
@@ -233,7 +249,7 @@ ${u.biography}
                         when (key) {
                             "-u", "u", "--unsave", "-unsave", "unsave" -> Option.UNSAVE
                             "-q", "q", "--quality", "-quality", "quality" -> Option.QUALITY
-                            "-t", "t", "--type", "-type", "type" -> Option.TYPE
+                            "-t", "t", "--type", "-type", "type" -> Option.EXP_TYPE
                             "--all-media", "-all-media", "all-media" -> Option.EXP_ALL_MEDIA
                             "--images", "-images", "images", "--image", "-image", "image" -> Option.EXP_IMAGES
                             "--videos", "-videos", "videos", "--video", "-video", "video" -> Option.EXP_VIDEOS
@@ -276,14 +292,18 @@ fun profileCommand(a: Array<String>, lister: (Profile) -> Profile.Section) {
         else
             lister(profiles[latestUser]!!).fetch(false)
     } else {
-        val a1UN = a[1].startsWith("@")
-        val un = (if (a1UN) a[1].substring(1) else latestUser)
+        val a1UN = when {
+            a[1].startsWith("@") -> a[1].substring(1)
+            a[1].isNotEmpty() && a[1][0].isLetter() -> a[1]
+            else -> null
+        }
+        val un = (if (a1UN != null) a[1] else latestUser)
             ?: throw InvalidCommandException("Please enter a username.")
         if (un !in profiles) profiles[un] = Profile(un)
         val p = profiles[un]!!
         latestUser = un
 
-        val nextParam = if (a1UN) 2 else 1
+        val nextParam = if (a1UN != null) 2 else 1
         when (a.getOrNull(nextParam)) {
             null -> lister(p).fetch(false)
             "reset" -> lister(p).fetch(true) // reset can be mistakenly called OneTimeListers

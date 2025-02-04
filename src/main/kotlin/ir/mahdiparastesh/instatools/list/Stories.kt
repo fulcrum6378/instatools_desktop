@@ -9,6 +9,7 @@ import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.util.Lister
 import ir.mahdiparastesh.instatools.util.Option
 import ir.mahdiparastesh.instatools.util.Profile
+import ir.mahdiparastesh.instatools.util.SimpleTasks
 
 class Stories(override val p: Profile) : Lister<Media>(), Profile.Section {
     override val numberOfClauses: Int = 1
@@ -40,9 +41,8 @@ class Stories(override val p: Profile) : Lister<Media>(), Profile.Section {
     ) {
         this[a[offsetOfClauses]].forEach { med ->
             downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)), owner = p.userName)
-            if (opt?.contains(Option.LIKE.key) == true) {
-                // TODO like a story
-            }
+            if (opt?.contains(Option.LIKE.key) == true)
+                SimpleTasks.likeMedia(med, GraphQlQuery.LIKE_STORY)
         }
     }
 }
