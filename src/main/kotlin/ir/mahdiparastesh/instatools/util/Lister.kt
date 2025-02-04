@@ -17,21 +17,26 @@ abstract class Lister<Item> {
         if (list == null) fetch()
         if (list?.isEmpty() == true)
             throw InvalidCommandException("The list is empty!")
+        if (index == "all")
+            return list!!
+
         val arr = arrayListOf<Item>()
         try {
             var spd: String
             for (separated in index.split(",")) {
-                spd = separated.trim()
+                spd = separated
                 if ("-" !in spd)
                     arr.add(list!![spd.toInt() - 1])
                 else {
                     val range = spd.split("-")
-                    for (r in (range.first().trim().toInt() - 1)..<range.last().trim().toInt())
+                    val start = range.first().toIntOrNull()?.let { it - 1 } ?: 0
+                    val end = range.last().toIntOrNull() ?: list!!.size
+                    for (r in start..<end)
                         arr.add(list!![r])
                 }
             }
         } catch (e: Exception) {
-            throw InvalidCommandException("The number you entered is incorrect! (${e::class.simpleName})")
+            throw InvalidCommandException("The number(s) you entered is incorrect! (${e::class.simpleName})")
         }
         return arr
     }

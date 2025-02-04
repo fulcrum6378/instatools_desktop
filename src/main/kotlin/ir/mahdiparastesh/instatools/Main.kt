@@ -50,25 +50,25 @@ s, saved                       Continuously list your saved posts.
     -l, --like                           Ensure that the post is liked.
   m reset                      Forget the previously loaded threads and load them again.
 u, user <@USERNAME|REST_ID>    Show details about an IG account. (e.g. `u 8337021434`)
-p, posts <@USERNAME>           List main posts of a profile. (`@` IS NECESSARY; e.g. `p @fulcrum6378`)
+p, posts <@USERNAME>           List main posts of a profile. (e.g. `p @fulcrum6378`)
   p, posts                     Load more posts from the latest user.
   p <@USERNAME> reset          Forget previously loaded main posts of a user and load them again.
   p reset                      Forget previously loaded main posts of the latest user and load them again.
   p <NUMBER(s)> {OPTIONS}      Download the post in that position.
     -q, --quality=<QUALITY>              A valid quality value (e.g. `-q=high`) (default: `high`)
     -l, --like                           Ensure that the post is liked.
-t, tagged <@USERNAME>          List tagged posts of a profile. (`@` IS NECESSARY; e.g. `t fulcrum6378`)
+t, tagged <@USERNAME>          List tagged posts of a profile. (e.g. `t fulcrum6378`)
   t, tagged                    Load more tagged posts from the latest user.
   t <@USERNAME> reset          Forget previously loaded tagged posts of the latest user and load them again.
   t reset                      Forget previously loaded tagged posts of the latest user and load them again.
   t <NUMBERS> {OPTIONS}        Download the tagged post in that position.
     -q, --quality=<QUALITY>              A valid quality value (e.g. `-q=high`) (default: `high`)
     -l, --like                           Ensure that the tagged post is liked.
-r, story <@USERNAME>           List daily story of a profile. (`@` IS NECESSARY; e.g. `r @fulcrum6378`)
+r, story <@USERNAME>           List daily story of a profile. (e.g. `r @fulcrum6378`)
   r <NUMBER(s)> {OPTIONS}      Download the story item in that position.
     -q, --quality=<QUALITY>              A valid quality value (e.g. `-q=high`) (default: `high`)
     -l, --like                           Ensure that the story is liked.
-h, highlight <@USERNAME>       List highlighted stories of a profile. (`@` IS NECESSARY; e.g. `h @fulcrum6378`)
+h, highlight <@USERNAME>       List highlighted stories of a profile. (e.g. `h @fulcrum6378`)
   h <HL-ID> <NUMBERS> {OPTIONS}Download the highlight story item in that position.
     -q, --quality=<QUALITY>              A valid quality value (e.g. `-q=high`) (default: `high`)
     -l, --like                           Ensure that the highlighted story is liked.
@@ -92,6 +92,9 @@ q, quit                        Quit the program.
 - `1-5` means 1 up to 5.
 - `1,5` means 1 and 5.
 - `1-10,15` means 1 up to 10 plus 15 (total 11 items).
+- `-35` means since the beginning of the list up to 35.
+- `5-` means 5 until the end of the list.
+- `all`
 
 >> List of qualities:
 h, high                        Highest available quality (original)
