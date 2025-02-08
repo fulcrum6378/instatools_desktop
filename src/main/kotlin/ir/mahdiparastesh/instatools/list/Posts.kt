@@ -24,8 +24,10 @@ class Posts(override val p: Profile) : LazyLister<Media>(), Profile.Section {
         if (p.userId == null && page.edges.isNotEmpty())
             p.userId = page.edges.first().node.user?.pk
 
+        var caption: String
         for (e in page.edges) {
-            println("$index. ${e.node.link()} : ${e.node.caption?.text?.replace("\n", " ")}")
+            caption = e.node.caption?.text?.replace("\n", " ")?.let { ": $it" } ?: ""
+            println("$index. ${e.node.link()}$caption")
             add(e.node)
         }
         if (page.page_info.has_next_page) {

@@ -16,11 +16,10 @@ class Saved : LazyLister<Media>() {
             Api.Endpoint.SAVED.url + (cursor?.let { "?max_id=$it" } ?: ""), Rest.LazyList::class,
             typeToken = TypeToken.getParameterized(Rest.LazyList::class.java, Rest.SavedItem::class.java).type,
         ).also { lazyList ->
+            var caption: String
             for (i in lazyList.items) {
-                println(
-                    "$index. ${i.media.link()} - @${i.media.owner().username} : " +
-                            "${i.media.caption?.text?.replace("\n", " ")}"
-                )
+                caption = i.media.caption?.text?.replace("\n", " ")?.let { ": $it" } ?: ""
+                println("$index. ${i.media.link()} - @${i.media.owner().username}$caption")
                 add(i.media)
             }
             if (lazyList.more_available) {

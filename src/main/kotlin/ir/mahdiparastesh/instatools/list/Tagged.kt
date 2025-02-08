@@ -26,11 +26,10 @@ class Tagged(override val p: Profile) : LazyLister<Media>(), Profile.Section {
         ).data?.xdt_api__v1__usertags__user_id__feed_connection
         if (page == null) throw Api.FailureException(-3)
 
+        var caption: String
         for (e in page.edges) {
-            println(
-                "$index. ${e.node.link()} - @${e.node.owner().username} : " +
-                        "${e.node.caption?.text?.replace("\n", " ")}"
-            )
+            caption = e.node.caption?.text?.replace("\n", " ")?.let { ": $it" } ?: ""
+            println("$index. ${e.node.link()} - @${e.node.owner().username}$caption")
             add(e.node)
         }
         if (page.page_info.has_next_page) {
