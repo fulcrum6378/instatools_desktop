@@ -300,7 +300,7 @@ fun profileCommand(a: Array<String>, lister: (Profile) -> Profile.Section) {
             a[1].isNotEmpty() && a[1][0].isLetter() -> a[1]
             else -> null
         }
-        val un = (if (a1UN != null) a[1] else latestUser)
+        val un = a1UN ?: latestUser
             ?: throw InvalidCommandException("Please enter a username.")
         if (un !in profiles) profiles[un] = Profile(un)
         val p = profiles[un]!!
