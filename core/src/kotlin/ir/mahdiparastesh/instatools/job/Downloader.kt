@@ -30,7 +30,7 @@ class Downloader : Queuer<Downloader.Queued>() {
         val u = med.owner()
         if (med.carousel_media != null) for (car in med.carousel_media) enqueue(
             Queued(
-                car.pk ?: car.id.split("-")[0],
+                car.pk(),
                 Utils.compileSecondsTS(car.taken_at),
                 car.nearest(idealSize)!!,
                 car.media_type.toInt().toByte(),
@@ -54,14 +54,14 @@ class Downloader : Queuer<Downloader.Queued>() {
         start()
     }
 
-    override fun handle(q: Queued) {
+    override fun handle(q: Queued) {  // FIXME status messages should be customised per module
         // prepare the path
         val extension = q.extension()
         val fileName = q.fileName(extension)
         val file = File(outputDir, fileName)
         if (file.exists()) {
             println("File `${fileName}` already exists! Overwrite? (y / any)")
-            if (readlnOrNull() !in arrayOf("y", "Y", "yes")) return // FIXME
+            if (readlnOrNull() !in arrayOf("y", "Y", "yes")) return
         }
 
         // download the file

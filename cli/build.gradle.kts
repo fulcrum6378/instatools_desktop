@@ -2,13 +2,14 @@ plugins { kotlin("jvm") }
 kotlin { jvmToolchain(23) }
 
 group = "ir.mahdiparastesh"
-version = "2.6.0"
+version = "2.7.5"
 
 dependencies {
     implementation(project(":core"))
 }
 
 tasks.jar {
+    archiveBaseName = "InstaTools"
     manifest {
         attributes["Main-Class"] = "ir.mahdiparastesh.instatools.MainKt"
         attributes["Manifest-Version"] = version
