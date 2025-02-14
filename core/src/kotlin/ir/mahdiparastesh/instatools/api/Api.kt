@@ -2,7 +2,7 @@ package ir.mahdiparastesh.instatools.api
 
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
-import ir.mahdiparastesh.instatools.InvalidCommandException
+import com.google.gson.reflect.TypeToken
 import ir.mahdiparastesh.instatools.util.Utils
 import org.apache.http.ConnectionClosedException
 import org.apache.http.HttpHost
@@ -33,7 +33,7 @@ class Api {
         )
     }
 
-    fun createClient(
+    private fun createClient(
         timeout: Int = 10000, proxy: String? = null
     ): CloseableHttpClient = HttpClients.custom().apply {
         setDefaultRequestConfig(
@@ -44,12 +44,16 @@ class Api {
             val uri = URI(proxy)
             setProxy(HttpHost(uri.host, uri.port, uri.scheme))
         } catch (_: URISyntaxException) {
-            throw InvalidCommandException("Please enter a valid URI like the example above.")
+            throw FailureException(-10)
         }
         // special settings for our own computers
         else if (InetAddress.getLocalHost().hostName in arrayOf("CHIMAERA", "ANGELDUST"))
             setProxy(HttpHost("127.0.0.1", 8580, "http"))
     }.build()
+
+    fun changeClient(timeout: Int = 10000, proxy: String? = null) {
+        client = createClient(timeout, proxy)
+    }
 
     fun loadCookies(path: String = "cookies.txt"): Boolean {
         val f = File(path)
@@ -63,7 +67,7 @@ class Api {
         clazz: KClass<*>,
         isPost: Boolean = false,
         body: String? = null,
-        typeToken: java.lang.reflect.Type? = null
+        generics: Array<KClass<*>>? = null
     ): JSON {
         val request = (if (isPost) HttpPost(url) else HttpGet(url)).apply {
             addHeader("x-asbd-id", "129477")
@@ -96,7 +100,12 @@ class Api {
             //FileOutputStream(File("Downloads/1.json")).use { it.write(text.encodeToByteArray()) }
         }
         if (response.statusLine.statusCode == 200) return try {
-            Gson().fromJson(text, typeToken ?: clazz.java) as JSON
+            Gson().fromJson(
+                text,
+                if (generics != null)
+                    TypeToken.getParameterized(clazz.java, *generics.map { it.java }.toTypedArray()).type
+                else clazz.java
+            ) as JSON
         } catch (_: JsonSyntaxException) {
             println(text)
             throw FailureException(-3)
@@ -119,6 +128,10 @@ class Api {
             throw FailureException(response.statusLine.statusCode)
         else
             return EntityUtils.toString(response.entity)
+    }
+
+    fun close() {
+        client.close()
     }
 
     @Suppress("unused")
@@ -167,6 +180,7 @@ class Api {
             -1 -> "Couldn't connect to Instagram!"
             -2 -> "Connection was broken!"
             -3 -> "Invalid response from Instagram!"
+            -10 -> "Please enter a valid URI like the example above."
             302 -> "Found redirection!"
             401 -> "You've been logged out!"
             404 -> "Not found!"

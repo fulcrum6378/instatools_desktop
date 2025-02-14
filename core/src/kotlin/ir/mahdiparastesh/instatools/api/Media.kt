@@ -36,6 +36,8 @@ data class Media(
     //val view_count: Double?,
 ) {
 
+    fun pk() = pk ?: id.substringBefore("_")
+
     fun owner(): User = owner ?: user!!
 
     fun link(userName: String? = null) = when (product_type) {

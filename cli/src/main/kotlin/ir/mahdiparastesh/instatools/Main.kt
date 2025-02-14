@@ -4,12 +4,15 @@ import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.Context.downloader
 import ir.mahdiparastesh.instatools.Context.exporter
 import ir.mahdiparastesh.instatools.api.GraphQlQuery
+import ir.mahdiparastesh.instatools.api.Media
+import ir.mahdiparastesh.instatools.job.Exporter.Exportable
+import ir.mahdiparastesh.instatools.job.Exporter.Method
+import ir.mahdiparastesh.instatools.job.SimpleJobs
 import ir.mahdiparastesh.instatools.list.Direct
 import ir.mahdiparastesh.instatools.list.Saved
-import ir.mahdiparastesh.instatools.util.Option
-import ir.mahdiparastesh.instatools.util.Profile
-import ir.mahdiparastesh.instatools.util.SimpleTasks
-import ir.mahdiparastesh.instatools.util.Utils
+import ir.mahdiparastesh.instatools.util.*
+import java.util.*
+import kotlin.collections.HashMap
 
 val listSvd: Saved by lazy { Saved() }
 val listMsg: Direct by lazy { Direct() }
@@ -133,7 +136,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                         throw InvalidCommandException("Such a file doesn't exist!")
                 }
 
-                "proxy" -> api.client = api.createClient(proxy = a[2])
+                "proxy" -> api.changeClient(proxy = a[2])
 
                 "timeout" -> {
                     val sec = try {
@@ -143,7 +146,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                     }
                     if (sec < 0)
                         throw InvalidCommandException("Please enter a positive number.")
-                    api.client = api.createClient(timeout = sec * 1000)
+                    api.changeClient(timeout = sec * 1000)
                 }
 
                 null -> throw InvalidCommandException("Invalid setting!")
@@ -160,7 +163,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                         else -> null
                     }
                 } else null
-                SimpleTasks.handlePostLink(a[1], Option.quality(opt?.get(Option.QUALITY.key)))
+                SimpleJobs.handlePostLink(a[1], Option.quality(opt?.get(Option.QUALITY.key)))
             } else
                 throw InvalidCommandException("Only links to Instagram posts and reels are supported!")
 
@@ -182,9 +185,9 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                     listSvd[a[2]].forEach { med ->
                         listSvd.saveUnsave(med, a[1] == "u" || a[1] == "unsave")
                         if (opt?.contains(Option.LIKE.key) == true)
-                            SimpleTasks.likeMedia(med, GraphQlQuery.LIKE_POST)
+                            SimpleActions.likeMedia(med, GraphQlQuery.LIKE_POST)
                         else if (opt?.contains(Option.UNLIKE.key) == true)
-                            SimpleTasks.likePost(med, true)
+                            SimpleActions.likePost(med, true)
                     }
                 }
 
@@ -202,19 +205,19 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                         if (opt?.contains(Option.UNSAVE.key) == true)
                             listSvd.saveUnsave(med, true)
                         if (opt?.contains(Option.LIKE.key) == true)
-                            SimpleTasks.likeMedia(med, GraphQlQuery.LIKE_POST)
+                            SimpleActions.likeMedia(med, GraphQlQuery.LIKE_POST)
                     }
                 }
             }
 
             "u", "user" -> if (a.size != 2)
                 throw InvalidCommandException("Please enter a username or the REST ID of a user.")
-            else (if (a[1].startsWith("@")) SimpleTasks.profileInfo(a[1].substring(1))
+            else (if (a[1].startsWith("@")) SimpleJobs.profileInfo(a[1].substring(1))
             else try {
                 a[1].toLong()
-                SimpleTasks.userInfo(a[1])
+                SimpleJobs.userInfo(a[1])
             } catch (_: NumberFormatException) {
-                SimpleTasks.profileInfo(a[1])
+                SimpleJobs.profileInfo(a[1])
             }).also { u ->
                 println(
                     """
@@ -268,7 +271,33 @@ ${u.biography}
                         }
                     }
                     listMsg[a[1]].forEach { thread ->
-                        exporter.export(thread, opt)
+                        val allMedia = opt[Option.EXP_ALL_MEDIA.key]
+                        val exp = Exportable(
+                            "Exported ${thread.title()}_${Utils.fileDateTime(Utils.now())}",
+                            thread,
+                            when (opt[Option.EXP_TYPE.key]) {
+                                "HTML", "html", "htm", "web" -> Method.HTML
+                                "TXT", "txt", "TEXT", "text" -> Method.TEXT
+                                else -> throw InvalidCommandException(
+                                    "Unsupported export method: ${opt[Option.EXP_TYPE.key]}"
+                                )
+                            },
+                            expSetting(allMedia ?: opt[Option.EXP_IMAGES.key]),
+                            expSetting(allMedia ?: opt[Option.EXP_VIDEOS.key]),
+                            expSetting(allMedia ?: opt[Option.EXP_POSTS.key]),
+                            expSetting(allMedia ?: opt[Option.EXP_REELS.key]),
+                            expSetting(allMedia ?: opt[Option.EXP_STORY.key]),
+                            expSetting(allMedia ?: opt[Option.EXP_UPLOADED_IMAGES.key]),
+                            expSetting(allMedia ?: opt[Option.EXP_UPLOADED_VIDEOS.key]),
+                            when (opt[Option.EXP_VOICE.key]) {
+                                "yes", "y", "1" -> true
+                                "no", "n", "none" -> false
+                                else -> throw InvalidCommandException("Please set `yes` or `no` for voice.")
+                            },
+                            dateTime(opt[Option.EXP_MIN_DATE.key]),
+                            dateTime(opt[Option.EXP_MAX_DATE.key]),
+                        )
+                        exporter.enqueue(exp)
                     }
                 }
             }
@@ -284,8 +313,35 @@ ${u.biography}
         else throw e
     }
 
-    api.client.close()
+    api.close()
     println("Good luck!")
+}
+
+private fun expSetting(value: String?): Float? {
+    if (value in arrayOf("no", "n", "none")) return null
+    if (value in arrayOf("thumb", "thumbnail")) return Media.Version.THUMB
+    return Option.quality(value)
+}
+
+private fun dateTime(value: String?): Long? {
+    if (value == null) return null
+    val cal = GregorianCalendar(1970, 1, 1, 0, 0, 0)
+    cal[Calendar.MILLISECOND] = 0
+    val spl = value.split("-")
+    for (i in 0..5) cal[when (i) {
+        0 -> Calendar.YEAR
+        1 -> Calendar.MONTH
+        2 -> Calendar.DAY_OF_MONTH
+        3 -> Calendar.HOUR_OF_DAY
+        4 -> Calendar.MINUTE
+        5 -> Calendar.SECOND
+        else -> throw InvalidCommandException("Date/time arguments exceeded!")
+    }] = try {
+        spl[i].toInt() + (if (i == 1) 1 else 0)
+    } catch (_: NumberFormatException) {
+        throw InvalidCommandException("Something in date-time is Not-A-Number!")
+    }
+    return cal.timeInMillis
 }
 
 fun profileCommand(a: Array<String>, lister: (Profile) -> Profile.Section) {
@@ -301,7 +357,7 @@ fun profileCommand(a: Array<String>, lister: (Profile) -> Profile.Section) {
             else -> null
         }
         val un = a1UN ?: latestUser
-            ?: throw InvalidCommandException("Please enter a username.")
+        ?: throw InvalidCommandException("Please enter a username.")
         if (un !in profiles) profiles[un] = Profile(un)
         val p = profiles[un]!!
         latestUser = un

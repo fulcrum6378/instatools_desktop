@@ -1,5 +1,6 @@
 package ir.mahdiparastesh.instatools.util
 
+import ir.mahdiparastesh.instatools.job.SimpleJobs
 import ir.mahdiparastesh.instatools.list.Highlights
 import ir.mahdiparastesh.instatools.list.Posts
 import ir.mahdiparastesh.instatools.list.Stories
@@ -15,7 +16,7 @@ class Profile(var userName: String) {
 
     fun requireUserId() {
         if (userId != null) return
-        userId = SimpleTasks.profileInfo(userName).id!!
+        userId = SimpleJobs.profileInfo(userName).id!!
         if (System.getenv("debug") == "1")
             println("Found the user ID: $userId")
     }

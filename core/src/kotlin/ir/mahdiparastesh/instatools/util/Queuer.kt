@@ -6,7 +6,7 @@ abstract class Queuer<Item> {
     private val queue = arrayListOf<Item>()
     protected abstract val outputDir: File?
 
-    protected fun enqueue(item: Item) {
+    fun enqueue(item: Item) {
         queue.add(item)
     }
 

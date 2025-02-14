@@ -1,17 +1,12 @@
 package ir.mahdiparastesh.instatools.job
 
 import ir.mahdiparastesh.instatools.Context.api
-import ir.mahdiparastesh.instatools.InvalidCommandException
 import ir.mahdiparastesh.instatools.api.Api
-import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.api.Message
 import ir.mahdiparastesh.instatools.api.Rest
 import ir.mahdiparastesh.instatools.exp.HtmlExporter
-import ir.mahdiparastesh.instatools.util.Option
 import ir.mahdiparastesh.instatools.util.Queuer
-import ir.mahdiparastesh.instatools.util.Utils
 import java.io.File
-import java.util.*
 
 /** Exports direct messages. */
 class Exporter : Queuer<Exporter.Exportable>() {
@@ -19,59 +14,6 @@ class Exporter : Queuer<Exporter.Exportable>() {
 
     companion object {
         const val USER_PROFILE_IMG = "user_%s"
-    }
-
-    fun export(thread: Message.DmThread, opt: HashMap<String, String?>) {
-        val allMedia = opt[Option.EXP_ALL_MEDIA.key]
-        Exportable(
-            "Exported ${thread.title()}_${Utils.fileDateTime(Utils.now())}",
-            thread,
-            when (opt[Option.EXP_TYPE.key]) {
-                "HTML", "html", "htm", "web" -> Method.HTML
-                "TXT", "txt", "TEXT", "text" -> Method.TEXT
-                else -> throw InvalidCommandException("Unsupported export method: ${opt[Option.EXP_TYPE.key]}")
-            },
-            setting(allMedia ?: opt[Option.EXP_IMAGES.key]),
-            setting(allMedia ?: opt[Option.EXP_VIDEOS.key]),
-            setting(allMedia ?: opt[Option.EXP_POSTS.key]),
-            setting(allMedia ?: opt[Option.EXP_REELS.key]),
-            setting(allMedia ?: opt[Option.EXP_STORY.key]),
-            setting(allMedia ?: opt[Option.EXP_UPLOADED_IMAGES.key]),
-            setting(allMedia ?: opt[Option.EXP_UPLOADED_VIDEOS.key]),
-            when (opt[Option.EXP_VOICE.key]) {
-                "yes", "y", "1" -> true
-                "no", "n", "none" -> false
-                else -> throw InvalidCommandException("Please set `yes` or `no` for voice.")
-            },
-            dateTime(opt[Option.EXP_MIN_DATE.key]),
-            dateTime(opt[Option.EXP_MAX_DATE.key]),
-        ).also { enqueue(it) }
-    }
-
-    private fun setting(value: String?): Float? {
-        if (value in arrayOf("no", "n", "none")) return null
-        if (value in arrayOf("thumb", "thumbnail")) return Media.Version.THUMB
-        return Option.quality(value)
-    }
-
-    private fun dateTime(value: String?): Long? {
-        if (value == null) return null
-        val cal = GregorianCalendar()
-        val spl = value.split("-")
-        for (i in 0..5) cal[when (i) {
-            0 -> Calendar.YEAR
-            1 -> Calendar.MONTH
-            2 -> Calendar.DAY_OF_MONTH
-            3 -> Calendar.HOUR_OF_DAY
-            4 -> Calendar.MINUTE
-            5 -> Calendar.SECOND
-            else -> throw InvalidCommandException("Date/time arguments exceeded!")
-        }] = try {
-            spl[i].toInt() + (if (i == 1) 1 else 0)
-        } catch (_: NumberFormatException) {
-            throw InvalidCommandException("Something in date-time is Not-A-Number!")
-        }
-        return cal.timeInMillis
     }
 
     override fun handle(q: Exportable) {

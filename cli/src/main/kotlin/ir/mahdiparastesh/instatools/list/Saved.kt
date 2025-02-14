@@ -1,6 +1,5 @@
 package ir.mahdiparastesh.instatools.list
 
-import com.google.gson.reflect.TypeToken
 import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.Media
@@ -13,8 +12,8 @@ class Saved : LazyLister<Media>() {
     override fun fetch() {
         super.fetch()
         api.call<Rest.LazyList<Rest.SavedItem>>(
-            Api.Endpoint.SAVED.url + (cursor?.let { "?max_id=$it" } ?: ""), Rest.LazyList::class,
-            typeToken = TypeToken.getParameterized(Rest.LazyList::class.java, Rest.SavedItem::class.java).type,
+            Api.Endpoint.SAVED.url + (cursor?.let { "?max_id=$it" } ?: ""),
+            Rest.LazyList::class, generics = arrayOf(Rest.SavedItem::class)
         ).also { lazyList ->
             var caption: String
             for (i in lazyList.items) {

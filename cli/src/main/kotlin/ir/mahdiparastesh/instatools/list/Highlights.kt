@@ -6,7 +6,7 @@ import ir.mahdiparastesh.instatools.api.*
 import ir.mahdiparastesh.instatools.util.Lister
 import ir.mahdiparastesh.instatools.util.Option
 import ir.mahdiparastesh.instatools.util.Profile
-import ir.mahdiparastesh.instatools.util.SimpleTasks
+import ir.mahdiparastesh.instatools.util.SimpleActions
 
 class Highlights(override val p: Profile) : Lister<Media>(), Profile.Section {
     private val trays: HashMap<String, Story> = hashMapOf()
@@ -68,7 +68,7 @@ class Highlights(override val p: Profile) : Lister<Media>(), Profile.Section {
         else this[a[offsetOfClauses + 1]].forEach { med ->
             downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)), owner = p.userName)
             if (opt?.contains(Option.LIKE.key) == true)
-                SimpleTasks.likeMedia(med, GraphQlQuery.LIKE_STORY)
+                SimpleActions.likeMedia(med, GraphQlQuery.LIKE_STORY)
         }
     }
 }

@@ -1,12 +1,12 @@
-package ir.mahdiparastesh.instatools.util
+package ir.mahdiparastesh.instatools.job
 
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.Context.downloader
 import ir.mahdiparastesh.instatools.api.*
+import ir.mahdiparastesh.instatools.util.Utils
 
-object SimpleTasks {
+object SimpleJobs {
 
     /** Resolves download URLs of desired posts or reels via their official links. */
     fun handlePostLink(link: String, idealSize: Float) {
@@ -26,12 +26,13 @@ object SimpleTasks {
             if (System.getenv("debug") == "1")
                 println("Media ID: $medId")
             val singleItemList = api.call<Rest.LazyList<Media>>(
-                Api.Endpoint.MEDIA_INFO.url.format(medId), Rest.LazyList::class,
-                typeToken = TypeToken.getParameterized(Rest.LazyList::class.java, Media::class.java).type,
+                Api.Endpoint.MEDIA_INFO.url.format(medId),
+                Rest.LazyList::class, generics = arrayOf(Media::class),
             )
             downloader.download(singleItemList.items.first(), idealSize, link)
         } else
-            System.err.println("Shall we re-implement PageConfig?")
+            if (System.getenv("debug") == "1")
+                System.err.println("Shall we re-implement PageConfig?")
     }
 
     /** If a user doesn't exist, HTTP error code 404 will be thrown! */
@@ -45,39 +46,23 @@ object SimpleTasks {
             ?: throw Api.FailureException(-3)
 
     /** Likes a post/reel or likes/unlikes a daily/highlighted story via the new GraphQl API. */
-    fun likeMedia(med: Media, graphQlQuery: GraphQlQuery) {
-        val unlike = graphQlQuery == GraphQlQuery.UNLIKE_STORY
-        if (cancelLiking(med, unlike)) return
-        val pk = med.pk ?: med.id.substringBefore("_")
+    fun likeMedia(
+        med: Media, graphQlQuery: GraphQlQuery, result: (success: Boolean) -> Unit
+    ) {
         val gql = api.call<GraphQl>(
-            Api.Endpoint.QUERY.url, GraphQl::class, true, graphQlQuery.body(pk)
+            Api.Endpoint.QUERY.url, GraphQl::class, true, graphQlQuery.body(med.pk())
         )
-        likeMessage(med, unlike, gql.data == null)
+        result(gql.data == null)
     }
 
     /** Likes a post/reel via the classic REST API. */
-    fun likePost(med: Media, unlike: Boolean = false) {
-        if (cancelLiking(med, unlike)) return
+    fun likePost(
+        med: Media, unlike: Boolean = false, result: (success: Boolean) -> Unit
+    ) {
         val rest = api.call<Rest.QuickResponse>(
-            Api.Endpoint.UNLIKE_POST.url.format(), Rest.QuickResponse::class, true
+            (if (unlike) Api.Endpoint.UNLIKE_POST else Api.Endpoint.LIKE_POST).url.format(med.pk()),
+            Rest.QuickResponse::class, true
         )
-        likeMessage(med, unlike, rest.status == Utils.REST_STATUS_OK)
-    }
-
-    private fun cancelLiking(med: Media, unlike: Boolean): Boolean {
-        if (!unlike && med.has_liked == true) {
-            println("Already liked ${med.link()}")
-            return true; }
-        if (unlike && med.has_liked == false) {
-            println("Already unliked ${med.link()}")
-            return true; }
-        return false
-    }
-
-    private fun likeMessage(med: Media, unlike: Boolean, success: Boolean) {
-        if (success)
-            println("Successfully ${if (unlike) "un" else ""}liked ${med.link()}")
-        else
-            System.err.println("Could not ${if (unlike) "un" else ""}like ${med.link()}")
+        result(rest.status == Utils.REST_STATUS_OK)
     }
 }

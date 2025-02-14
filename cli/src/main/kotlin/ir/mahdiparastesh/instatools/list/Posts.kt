@@ -9,7 +9,7 @@ import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.util.Lister.LazyLister
 import ir.mahdiparastesh.instatools.util.Option
 import ir.mahdiparastesh.instatools.util.Profile
-import ir.mahdiparastesh.instatools.util.SimpleTasks
+import ir.mahdiparastesh.instatools.util.SimpleActions
 
 class Posts(override val p: Profile) : LazyLister<Media>(), Profile.Section {
     override val numberOfClauses: Int = 1
@@ -46,7 +46,7 @@ class Posts(override val p: Profile) : LazyLister<Media>(), Profile.Section {
         this[a[offsetOfClauses]].forEach { med ->
             downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
             if (opt?.contains(Option.LIKE.key) == true)
-                SimpleTasks.likeMedia(med, GraphQlQuery.LIKE_POST)
+                SimpleActions.likeMedia(med, GraphQlQuery.LIKE_POST)
         }
     }
 }

@@ -61,7 +61,7 @@ class Downloader : Queuer<Downloader.Queued>() {
         val file = File(outputDir, fileName)
         if (file.exists()) {
             println("File `${fileName}` already exists! Overwrite? (y / any)")
-            if (readlnOrNull() !in arrayOf("y", "Y", "yes")) return
+            if (readlnOrNull() !in arrayOf("y", "Y", "yes")) return // FIXME
         }
 
         // download the file
