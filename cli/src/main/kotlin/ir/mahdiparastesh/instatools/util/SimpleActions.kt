@@ -23,8 +23,8 @@ object SimpleActions {
     private fun canDoLiking(med: Media, unlike: Boolean): Boolean =
         if ((!unlike && med.has_liked == true) || (unlike && med.has_liked == false)) {
             println("Already ${if (unlike) "un" else ""}liked ${med.link()}")
-            true
-        } else false
+            false
+        } else true
 
     private fun likeMessage(med: Media, unlike: Boolean, success: Boolean) {
         if (success)

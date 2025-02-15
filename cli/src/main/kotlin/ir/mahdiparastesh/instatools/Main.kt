@@ -10,9 +10,11 @@ import ir.mahdiparastesh.instatools.job.Exporter.Method
 import ir.mahdiparastesh.instatools.job.SimpleJobs
 import ir.mahdiparastesh.instatools.list.Direct
 import ir.mahdiparastesh.instatools.list.Saved
-import ir.mahdiparastesh.instatools.util.*
+import ir.mahdiparastesh.instatools.util.Option
+import ir.mahdiparastesh.instatools.util.Profile
+import ir.mahdiparastesh.instatools.util.SimpleActions
+import ir.mahdiparastesh.instatools.util.Utils
 import java.util.*
-import kotlin.collections.HashMap
 
 val listSvd: Saved by lazy { Saved() }
 val listMsg: Direct by lazy { Direct() }
@@ -34,7 +36,6 @@ Copyright © Mahdi Parastesh - All Rights Reserved.
 >> List of settings:
 set cookies {PATH}           Load the required cookies from a path. (default: `./cookies.txt`)
 set proxy {URL}              Set an HTTP proxy (e.g. `set proxy http://127.0.0.1:8580/`)
-set timeout <seconds>        Set timeout for normal HTTP requests (not downloads) (e.g. `set timeout 10`)
 
 >> List of commands:
 d, download <LINK> {OPTIONS}   Download only a post or reel via its official link.
@@ -136,18 +137,7 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                         throw InvalidCommandException("Such a file doesn't exist!")
                 }
 
-                "proxy" -> api.changeClient(proxy = a[2])
-
-                "timeout" -> {
-                    val sec = try {
-                        a[2].toInt()
-                    } catch (_: NumberFormatException) {
-                        throw InvalidCommandException("Please enter a valid number.")
-                    }
-                    if (sec < 0)
-                        throw InvalidCommandException("Please enter a positive number.")
-                    api.changeClient(timeout = sec * 1000)
-                }
+                "proxy" -> api.setProxy(a[2])
 
                 null -> throw InvalidCommandException("Invalid setting!")
             }
@@ -295,7 +285,6 @@ ${u.biography}
         else throw e
     }
 
-    api.close()
     println("Good luck!")
 }
 

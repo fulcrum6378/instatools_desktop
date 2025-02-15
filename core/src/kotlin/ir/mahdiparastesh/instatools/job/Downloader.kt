@@ -10,15 +10,13 @@ import org.apache.commons.imaging.formats.jpeg.exif.ExifRewriter
 import org.apache.commons.imaging.formats.tiff.constants.ExifTagConstants
 import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants
 import org.apache.commons.imaging.formats.tiff.write.TiffOutputSet
-import org.apache.http.ConnectionClosedException
-import org.apache.http.client.config.RequestConfig
-import org.apache.http.client.methods.CloseableHttpResponse
-import org.apache.http.client.methods.HttpGet
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.net.SocketTimeoutException
 import java.net.URI
+import javax.net.ssl.HttpsURLConnection
 
 /** Downloads media and saves them. */
 class Downloader : Queuer<Downloader.Queued>() {
@@ -54,7 +52,8 @@ class Downloader : Queuer<Downloader.Queued>() {
         start()
     }
 
-    override fun handle(q: Queued) {  // FIXME status messages should be customised per module
+    // FIXME status messages should be customised per module
+    override fun handle(q: Queued) {
         // prepare the path
         val extension = q.extension()
         val fileName = q.fileName(extension)
@@ -66,36 +65,33 @@ class Downloader : Queuer<Downloader.Queued>() {
 
         // download the file
         var ba: ByteArray? = null
-        var response: CloseableHttpResponse? = null
-        var retry = 0
+        var retry = -1
         while (ba == null) {
-            if (response != null) {
-                if (retry > 5)
-                    throw FailureException()
-                else {
-                    println("Retrying for ${q.link}")
-                    retry++
-                }
+            retry++
+            if (retry > 0) {
+                if (retry > 5) throw FailureException()
+                else println("Retrying for ${q.link}")
             }
 
-            val request = HttpGet(q.url).apply {
-                config = RequestConfig.custom().setConnectTimeout(
-                    when (q.type) {
-                        Media.Type.IMAGE.num -> 15000
-                        else -> 2 * 60000
-                    }
-                ).build()
+            val con = URI(q.url).toURL().openConnection(api.proxy) as HttpsURLConnection
+            con.requestMethod = "GET"
+            con.connectTimeout = api.connectTimeout
+            con.doInput = true
+            con.readTimeout = when (q.type) {
+                Media.Type.IMAGE.num -> 15000
+                else -> 2 * 60000
             }
             try {
-                response = api.client.execute(request)
-            } catch (_: IOException) {
+                con.connect()
+            } catch (_: SocketTimeoutException) {
                 continue
             }
-            if (response.statusLine.statusCode != 200)
+
+            if (con.responseCode != 200)
                 throw FailureException()
             ba = try {
-                response.entity.content.readAllBytes()
-            } catch (_: ConnectionClosedException) {
+                con.inputStream.readAllBytes()
+            } catch (_: IOException) {
                 null
             }
         }

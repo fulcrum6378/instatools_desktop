@@ -4,55 +4,21 @@ import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
 import ir.mahdiparastesh.instatools.util.Utils
-import org.apache.http.ConnectionClosedException
-import org.apache.http.HttpHost
-import org.apache.http.client.config.RequestConfig
-import org.apache.http.client.methods.HttpGet
-import org.apache.http.client.methods.HttpPost
-import org.apache.http.entity.StringEntity
-import org.apache.http.impl.client.CloseableHttpClient
-import org.apache.http.impl.client.HttpClients
-import org.apache.http.util.EntityUtils
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
-import java.net.InetAddress
-import java.net.URI
-import java.net.URISyntaxException
-import java.util.logging.Level
-import java.util.logging.Logger
+import java.net.*
+import javax.net.ssl.HttpsURLConnection
 import kotlin.reflect.KClass
 
 class Api {
-    var client: CloseableHttpClient = createClient()
     private var cookies = ""
+    var proxy: Proxy = Proxy.NO_PROXY
+    val connectTimeout = 8000
 
     init {
-        Logger.getLogger("org.apache.http.client").setLevel(
-            if (System.getenv("debug") == "1") Level.WARNING else Level.OFF
-        )
-    }
-
-    private fun createClient(
-        timeout: Int = 10000, proxy: String? = null
-    ): CloseableHttpClient = HttpClients.custom().apply {
-        setDefaultRequestConfig(
-            RequestConfig.custom().setConnectTimeout(timeout).build()
-        )
-
-        if (proxy != null) try {
-            val uri = URI(proxy)
-            setProxy(HttpHost(uri.host, uri.port, uri.scheme))
-        } catch (_: URISyntaxException) {
-            throw FailureException(-10)
-        }
-        // special settings for our own computers
-        else if (InetAddress.getLocalHost().hostName in arrayOf("CHIMAERA", "ANGELDUST"))
-            setProxy(HttpHost("127.0.0.1", 8580, "http"))
-    }.build()
-
-    fun changeClient(timeout: Int = 10000, proxy: String? = null) {
-        client = createClient(timeout, proxy)
+        if (InetAddress.getLocalHost().hostName in arrayOf("CHIMAERA", "ANGELDUST"))
+            proxy = Proxy(Proxy.Type.HTTP, InetSocketAddress("127.0.0.1", 8580))
     }
 
     fun loadCookies(path: String = "cookies.txt"): Boolean {
@@ -62,6 +28,15 @@ class Api {
         return true
     }
 
+    fun setProxy(newProxy: String? = null) {
+        proxy =
+            if (newProxy == null) Proxy.NO_PROXY
+            else {
+                val uri = URI(newProxy)
+                Proxy(Proxy.Type.HTTP, InetSocketAddress(uri.host, uri.port))
+            }
+    }
+
     fun <JSON> call(
         url: String,
         clazz: KClass<*>,
@@ -69,69 +44,83 @@ class Api {
         body: String? = null,
         generics: Array<KClass<*>>? = null
     ): JSON {
-        val request = (if (isPost) HttpPost(url) else HttpGet(url)).apply {
-            addHeader("x-asbd-id", "129477")
-            if (cookies.contains("csrftoken=")) addHeader(
-                "x-csrftoken",
-                cookies.substringAfter("csrftoken=").substringBefore(";")
-            )
-            addHeader("x-ig-app-id", "936619743392459")
-            addHeader("cookie", cookies)
-            if (this is HttpPost && body != null) {
-                addHeader("content-type", "application/x-www-form-urlencoded")
-                entity = StringEntity(body, "UTF-8")
-                if (System.getenv("debug") == "1")
-                    println("Post Body: $body")
-            }
+        val con = URI(url).toURL().openConnection(proxy) as HttpsURLConnection
+        con.requestMethod = if (isPost) "POST" else "GET"
+        con.setRequestProperty("x-asbd-id", "129477")
+        if (cookies.contains("csrftoken=")) con.setRequestProperty(
+            "x-csrftoken",
+            cookies.substringAfter("csrftoken=").substringBefore(";")
+        )
+        con.setRequestProperty("x-ig-app-id", "936619743392459")
+        con.setRequestProperty("cookie", cookies)
+        if (isPost && body != null) {
+            con.doOutput = true
+            con.setRequestProperty("content-type", "application/x-www-form-urlencoded")
         }
-        val response = try {
-            client.execute(request)
-        } catch (e: IOException) {
+        con.connectTimeout = connectTimeout
+        con.doInput = true
+        con.readTimeout = 10000
+        try {
+            con.connect()
+        } catch (_: SocketTimeoutException) {
             throw FailureException(-1)
         }
 
+        if (isPost && body != null) {
+            con.outputStream.bufferedWriter().use { it.write(body) }
+            if (System.getenv("debug") == "1")
+                println("Post Body: $body")
+        }
+
         val text = try {
-            EntityUtils.toString(response.entity)
-        } catch (_: ConnectionClosedException) {
+            con.inputStream.bufferedReader().readText()
+        } catch (_: IOException) {
             throw FailureException(-2)
         }
         if (System.getenv("debug") == "1") {
             println(text)
             //FileOutputStream(File("Downloads/1.json")).use { it.write(text.encodeToByteArray()) }
         }
-        if (response.statusLine.statusCode == 200) return try {
+
+        if (con.responseCode == 200) return try {
             Gson().fromJson(
                 text,
-                if (generics != null)
-                    TypeToken.getParameterized(clazz.java, *generics.map { it.java }.toTypedArray()).type
-                else clazz.java
+                if (generics != null) TypeToken.getParameterized(
+                    clazz.java, *generics.map { it.java }.toTypedArray()
+                ).type else clazz.java
             ) as JSON
         } catch (_: JsonSyntaxException) {
             println(text)
             throw FailureException(-3)
         } else
-            throw FailureException(response.statusLine.statusCode)
+            throw FailureException(con.responseCode)
     }
 
     fun page(url: String): String {
-        val request = HttpGet(url).apply {
-            addHeader("accept", "text/html")
-            addHeader("cookie", cookies)
-        }
-        val response = try {
-            client.execute(request)
-        } catch (e: IOException) {
+        val con = URI(url).toURL().openConnection(proxy) as HttpsURLConnection
+        con.requestMethod = "GET"
+        con.setRequestProperty("accept", "text/html")
+        con.setRequestProperty(
+            "user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                    "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                    "Chrome/133.0.0.0 Safari/537.36"
+        )
+        con.setRequestProperty("cookie", cookies)
+        con.connectTimeout = connectTimeout
+        con.doInput = true
+        con.readTimeout = 12000
+        try {
+            con.connect()
+        } catch (_: SocketTimeoutException) {
             throw FailureException(-1)
         }
 
-        if (response.statusLine.statusCode != 200)
-            throw FailureException(response.statusLine.statusCode)
-        else
-            return EntityUtils.toString(response.entity)
-    }
-
-    fun close() {
-        client.close()
+        if (con.responseCode == 200) return try {
+            con.inputStream.bufferedReader().readText()
+        } catch (_: IOException) {
+            throw FailureException(-2)
+        } else
+            throw FailureException(con.responseCode)
     }
 
     @Suppress("unused")
@@ -180,7 +169,6 @@ class Api {
             -1 -> "Couldn't connect to Instagram!"
             -2 -> "Connection was broken!"
             -3 -> "Invalid response from Instagram!"
-            -10 -> "Please enter a valid URI like the example above."
             302 -> "Found redirection!"
             401 -> "You've been logged out!"
             404 -> "Not found!"

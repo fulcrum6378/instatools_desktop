@@ -52,7 +52,7 @@ object SimpleJobs {
         val gql = api.call<GraphQl>(
             Api.Endpoint.QUERY.url, GraphQl::class, true, graphQlQuery.body(med.pk())
         )
-        result(gql.data == null)
+        result(gql.data != null)
     }
 
     /** Likes a post/reel via the classic REST API. */
