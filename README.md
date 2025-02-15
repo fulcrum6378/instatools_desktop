@@ -1,7 +1,8 @@
-# InstaTools
+# InstaTools Desktop
 
-InstaTools is an application consisting of tools which help managing contents from Instagram.
-It uses the Instagram Web API for:
+This is the desktop version of a [*InstaTools*](https://github.com/fulcrum6378/instatools),
+an application containing different tools which help people retrieve contents from Instagram.
+It uses the web API of Instagram for:
 
 1. Downloading bulk content from Instagram
 2. Exporting direct messages in HTML, TXT and JSON file formats
@@ -9,14 +10,14 @@ It uses the Instagram Web API for:
 
 ### Modules
 
-This project is written in pure Kotlin and contains 3 modules:
+This project is written in pure Kotlin and contains these modules:
 
 1. **CORE**: containing the core tools for interacting with the Instagram API.
 2. **CLI**: an interactive command-line interface deployed as a JAR. 
    It requires you to manually extract Instagram cookies from your browser and put them in `cookies.txt`.
-3. **JFX**: A JavaFX desktop application.
+3. JFX: A GUI desktop application using JavaFX. (not yet developed)
 
-### Command-Line Interface
+## Command-Line Interface
 
 1. To download in desired qualities (using the parameter `--quality=?`):
     - `d`|`download`: direct links to posts or reels
@@ -27,9 +28,6 @@ This project is written in pure Kotlin and contains 3 modules:
     - `h`|`highlight`: highlights of a profile
 2. To export your direct messages: `m`|`messages`
 3. To retrieve information about a user: `u`|`user`
-
-This application is the successor of its Android version which was developed and published in 2022
-on Google Play and Galaxy Store and was banned because of copyright infringement against the trademark of Instagram!
 
 ### License
 
