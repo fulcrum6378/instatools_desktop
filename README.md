@@ -1,6 +1,6 @@
 # InstaTools Desktop
 
-This is the desktop version of a [*InstaTools*](https://github.com/fulcrum6378/instatools),
+This is the desktop version of [*InstaTools*](https://github.com/fulcrum6378/instatools),
 an application containing different tools which help people retrieve contents from Instagram.
 It uses the web API of Instagram for:
 

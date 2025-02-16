@@ -85,9 +85,7 @@ data class Media(
         val user_id: String?,
     )
 
-    data class ImageVersions2(
-        val candidates: List<Version>
-    )
+    data class ImageVersions2(val candidates: List<Version>)
 
     data class Version(
         val url: String,
