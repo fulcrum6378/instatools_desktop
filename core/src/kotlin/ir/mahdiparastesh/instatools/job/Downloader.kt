@@ -141,8 +141,7 @@ class Downloader : Queuer<Downloader.Queued>() {
     ) {
         fun fileName(ext: String) = "${owner}_${Utils.fileDateTime(date)}_$id.$ext"
 
-        fun extension() = URI(url).path.split(".").lastOrNull()
-            ?: Media.Type.entries.find { it.num == type }!!.ext
+        fun extension() = URI(url).path.split(".").last()
     }
 
     class FailureException : IllegalStateException("Couldn't download from Instagram!"),

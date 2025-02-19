@@ -2,7 +2,7 @@ plugins { kotlin("jvm") }
 kotlin { jvmToolchain(23) }
 
 group = "ir.mahdiparastesh"
-version = "2.8.8"
+version = "2.8.9"
 
 dependencies {
     implementation(project(":core"))

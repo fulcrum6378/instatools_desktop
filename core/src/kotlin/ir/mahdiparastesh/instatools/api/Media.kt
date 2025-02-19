@@ -173,9 +173,9 @@ data class Media(
         }
     }
 
-    enum class Type(val num: Byte, val ext: String) {
-        IMAGE(1, "jpg"), // could be PNG or WEBP as well
-        VIDEO(2, "mp4"),
-        AUDIO(3, "m4a"),
+    enum class Type(val num: Byte) {
+        IMAGE(1),
+        VIDEO(2),
+        AUDIO(3),
     }
 }
