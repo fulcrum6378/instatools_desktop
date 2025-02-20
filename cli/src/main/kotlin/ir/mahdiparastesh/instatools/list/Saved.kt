@@ -5,7 +5,6 @@ import ir.mahdiparastesh.instatools.api.Api
 import ir.mahdiparastesh.instatools.api.Media
 import ir.mahdiparastesh.instatools.api.Rest
 import ir.mahdiparastesh.instatools.util.Lister.LazyLister
-import ir.mahdiparastesh.instatools.util.Utils
 
 class Saved : LazyLister<Media>() {
 
@@ -26,17 +25,5 @@ class Saved : LazyLister<Media>() {
                 println("Enter `s` again to load more posts...")
             } else endOfList()
         }
-    }
-
-    /** Saves or unsaves posts. */
-    fun saveUnsave(med: Media, unsave: Boolean) {
-        val restStatus = api.call<Rest.QuickResponse>(
-            (if (unsave) Api.Endpoint.UNSAVE else Api.Endpoint.SAVE).url.format(med.pk),
-            Rest.QuickResponse::class, true
-        ).status
-        if (restStatus == Utils.REST_STATUS_OK)
-            println("Successfully ${if (unsave) "unsaved" else "saved"} ${med.link()}")
-        else
-            System.err.println("Couldn't ${if (unsave) "unsave" else "save"} this post!")
     }
 }

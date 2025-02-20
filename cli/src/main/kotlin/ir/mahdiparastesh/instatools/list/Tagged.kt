@@ -48,7 +48,7 @@ class Tagged(override val p: Profile) : LazyLister<Media>(), Profile.Section {
         this[a[offsetOfClauses]].forEach { med ->
             downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
             if (opt?.contains(Option.LIKE.key) == true)
-                SimpleActions.likeMedia(med, GraphQlQuery.LIKE_POST)
+                SimpleActions.actionMedia(med, GraphQlQuery.LIKE_POST)
         }
     }
 }

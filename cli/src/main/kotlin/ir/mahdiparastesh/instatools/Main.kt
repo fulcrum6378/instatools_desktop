@@ -173,11 +173,15 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                         }
                     } else null
                     listSvd[a[2]].forEach { med ->
-                        listSvd.saveUnsave(med, a[1] == "u" || a[1] == "unsave")
+                        // unsave / resave
+                        val unsave = a[1] == "u" || a[1] == "unsave"
+                        SimpleActions.actionMedia(med, if (unsave) GraphQlQuery.UNSAVE else GraphQlQuery.SAVE)
+
+                        // like / unlike
                         if (opt?.contains(Option.LIKE.key) == true)
-                            SimpleActions.likeMedia(med, GraphQlQuery.LIKE_POST)
+                            SimpleActions.actionMedia(med, GraphQlQuery.LIKE_POST)
                         else if (opt?.contains(Option.UNLIKE.key) == true)
-                            SimpleActions.likePost(med, true)
+                            SimpleActions.actionMedia(med, GraphQlQuery.UNLIKE_POST)
                     }
                 }
 
@@ -193,9 +197,9 @@ y<NUMBER>                      Ideal height (e.g. y1000) (do NOT separate the nu
                     listSvd[a[1]].forEach { med ->
                         downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)))
                         if (opt?.contains(Option.UNSAVE.key) == true)
-                            listSvd.saveUnsave(med, true)
+                            SimpleActions.actionMedia(med, GraphQlQuery.UNSAVE)
                         if (opt?.contains(Option.LIKE.key) == true)
-                            SimpleActions.likeMedia(med, GraphQlQuery.LIKE_POST)
+                            SimpleActions.actionMedia(med, GraphQlQuery.LIKE_POST)
                     }
                 }
             }

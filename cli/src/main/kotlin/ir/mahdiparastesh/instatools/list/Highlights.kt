@@ -68,7 +68,7 @@ class Highlights(override val p: Profile) : Lister<Media>(), Profile.Section {
         else this[a[offsetOfClauses + 1]].forEach { med ->
             downloader.download(med, Option.quality(opt?.get(Option.QUALITY.key)), owner = p.userName)
             if (opt?.contains(Option.LIKE.key) == true)
-                SimpleActions.likeMedia(med, GraphQlQuery.LIKE_STORY)
+                SimpleActions.actionMedia(med, GraphQlQuery.LIKE_STORY)
         }
     }
 }

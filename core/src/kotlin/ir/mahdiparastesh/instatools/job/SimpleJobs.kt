@@ -4,7 +4,6 @@ import com.google.gson.Gson
 import ir.mahdiparastesh.instatools.Context.api
 import ir.mahdiparastesh.instatools.Context.downloader
 import ir.mahdiparastesh.instatools.api.*
-import ir.mahdiparastesh.instatools.util.Utils
 
 object SimpleJobs {
 
@@ -45,24 +44,13 @@ object SimpleJobs {
             ?.let { it.user!! }
             ?: throw Api.FailureException(-3)
 
-    /** Likes a post/reel or likes/unlikes a daily/highlighted story via the new GraphQl API. */
-    fun likeMedia(
+    /** Performs a GraphQL action on a post/reel/story. */
+    fun actionMedia(
         med: Media, graphQlQuery: GraphQlQuery, result: (success: Boolean) -> Unit
     ) {
         val gql = api.call<GraphQl>(
             Api.Endpoint.QUERY.url, GraphQl::class, true, graphQlQuery.body(med.pk())
         )
         result(gql.data != null)
-    }
-
-    /** Likes a post/reel via the classic REST API. */
-    fun likePost(
-        med: Media, unlike: Boolean = false, result: (success: Boolean) -> Unit
-    ) {
-        val rest = api.call<Rest.QuickResponse>(
-            (if (unlike) Api.Endpoint.UNLIKE_POST else Api.Endpoint.LIKE_POST).url.format(med.pk()),
-            Rest.QuickResponse::class, true
-        )
-        result(rest.status == Utils.REST_STATUS_OK)
     }
 }

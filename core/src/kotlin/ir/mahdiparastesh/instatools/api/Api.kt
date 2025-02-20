@@ -14,7 +14,7 @@ import kotlin.reflect.KClass
 class Api {
     private var cookies = ""
     var proxy: Proxy = Proxy.NO_PROXY
-    val connectTimeout = 8000
+    val connectTimeout = 5000
 
     init {
         if (InetAddress.getLocalHost().hostName in arrayOf("CHIMAERA", "ANGELDUST"))
@@ -72,18 +72,26 @@ class Api {
                 println("Post Body: $body")
         }
 
-        val text = try {
+        val responseCode = try {
+            con.responseCode
+        } catch (_: ProtocolException) {
+            throw FailureException(-4)
+        }
+
+        val text = if (responseCode == 200) try {
             con.inputStream.bufferedReader().readText()
         } catch (_: IOException) {
             throw FailureException(-2)
-        }
+        } else
+            throw FailureException(responseCode)
+
         if (System.getenv("debug") == "1") {
             println(text)
             //FileOutputStream(File("Downloads/1.json")).use { it.write(text.encodeToByteArray()) }
         }
 
-        if (con.responseCode == 200) return try {
-            Gson().fromJson(
+        try {
+            return Gson().fromJson(
                 text,
                 if (generics != null) TypeToken.getParameterized(
                     clazz.java, *generics.map { it.java }.toTypedArray()
@@ -92,8 +100,7 @@ class Api {
         } catch (_: JsonSyntaxException) {
             println(text)
             throw FailureException(-3)
-        } else
-            throw FailureException(con.responseCode)
+        }
     }
 
     fun page(url: String): String {
@@ -115,32 +122,36 @@ class Api {
             throw FailureException(-1)
         }
 
-        if (con.responseCode == 200) return try {
-            con.inputStream.bufferedReader().readText()
+        val responseCode = try {
+            con.responseCode
+        } catch (_: ProtocolException) {
+            throw FailureException(-4)
+        }
+
+        if (responseCode == 200) try {
+            return con.inputStream.bufferedReader().readText()
         } catch (_: IOException) {
             throw FailureException(-2)
         } else
-            throw FailureException(con.responseCode)
+            throw FailureException(responseCode)
     }
 
     @Suppress("unused")
     enum class Endpoint(val url: String) {
         QUERY("https://www.instagram.com/graphql/query"),
 
-        // Saving
+        // information
+        USER_INFO("https://www.instagram.com/api/v1/users/%s/info/"),
+        PROFILE_INFO("https://www.instagram.com/api/v1/users/web_profile_info/?username=%s"),
+        MEDIA_INFO("https://www.instagram.com/api/v1/media/%s/info/"),
         SAVED("https://www.instagram.com/api/v1/feed/saved/posts/"),
 
-        // Direct
+        // direct messages
         INBOX("https://www.instagram.com/api/v1/direct_v2/inbox/?cursor=%s"),
         DIRECT("https://www.instagram.com/api/v1/direct_v2/threads/%1\$s/?cursor=%2\$s&limit=%3\$d"),
         SEEN("https://www.instagram.com/api/v1/direct_v2/threads/%1\$s/items/%2\$s/seen/"),
 
-        // Info
-        PROFILE_INFO("https://www.instagram.com/api/v1/users/web_profile_info/?username=%s"),
-        USER_INFO("https://www.instagram.com/api/v1/users/%s/info/"),
-        MEDIA_INFO("https://www.instagram.com/api/v1/media/%s/info/"),
-
-        // Friendships (always use "?count=" for more accurate results)
+        // friendships
         FOLLOWERS("https://www.instagram.com/api/v1/friendships/%1\$s/followers/?count=200&max_id=%2\$s"),
         FOLLOWING("https://www.instagram.com/api/v1/friendships/%1\$s/following/?count=200&max_id=%2\$s"),
         FRIENDSHIPS_MANY("https://www.instagram.com/api/v1/friendships/show_many/"),
@@ -154,13 +165,7 @@ class Api {
         BLOCK("https://www.instagram.com/api/v1/web/friendships/%d/block/"),
         UNBLOCK("https://www.instagram.com/api/v1/web/friendships/%d/unblock/"),
 
-        // Posts
-        SAVE("https://www.instagram.com/api/v1/web/save/%s/save/"),
-        UNSAVE("https://www.instagram.com/api/v1/web/save/%s/unsave/"),
-        LIKE_POST("https://www.instagram.com/api/v1/web/likes/%s/like/"),
-        UNLIKE_POST("https://www.instagram.com/api/v1/web/likes/%s/unlike/"),
-
-        // Logging in/out
+        // logging in/out
         LOGOUT("https://www.instagram.com/accounts/logout/ajax/")
     }
 
@@ -169,8 +174,7 @@ class Api {
             -1 -> "Couldn't connect to Instagram!"
             -2 -> "Connection was broken!"
             -3 -> "Invalid response from Instagram!"
-            302 -> "Found redirection!"
-            401 -> "You've been logged out!"
+            -4, 401 -> "You've been logged out!" + (if (status == 401) " (HTTP error $status 401)" else "")
             404 -> "Not found!"
             429 -> "Too many requests!"
             else -> "HTTP error code $status!"
