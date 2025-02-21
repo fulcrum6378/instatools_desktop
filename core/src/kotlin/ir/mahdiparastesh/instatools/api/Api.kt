@@ -53,20 +53,13 @@ class Api {
         )
         con.setRequestProperty("x-ig-app-id", "936619743392459")
         con.setRequestProperty("cookie", cookies)
-        if (isPost && body != null) {
-            con.doOutput = true
-            con.setRequestProperty("content-type", "application/x-www-form-urlencoded")
-        }
+
         con.connectTimeout = connectTimeout
         con.doInput = true
         con.readTimeout = 10000
-        try {
-            con.connect()
-        } catch (_: SocketTimeoutException) {
-            throw FailureException(-1)
-        }
-
         if (isPost && body != null) {
+            con.doOutput = true
+            con.setRequestProperty("content-type", "application/x-www-form-urlencoded")
             con.outputStream.bufferedWriter().use { it.write(body) }
             if (System.getenv("debug") == "1")
                 println("Post Body: $body")
@@ -74,6 +67,8 @@ class Api {
 
         val responseCode = try {
             con.responseCode
+        } catch (_: SocketTimeoutException) {
+            throw FailureException(-1)
         } catch (_: ProtocolException) {
             throw FailureException(-4)
         }
@@ -113,17 +108,15 @@ class Api {
                     "Chrome/133.0.0.0 Safari/537.36"
         )
         con.setRequestProperty("cookie", cookies)
+
         con.connectTimeout = connectTimeout
         con.doInput = true
         con.readTimeout = 12000
-        try {
-            con.connect()
-        } catch (_: SocketTimeoutException) {
-            throw FailureException(-1)
-        }
 
         val responseCode = try {
             con.responseCode
+        } catch (_: SocketTimeoutException) {
+            throw FailureException(-1)
         } catch (_: ProtocolException) {
             throw FailureException(-4)
         }
