@@ -1,20 +1,20 @@
 package ir.mahdiparastesh.instatools.api
 
-@Suppress("PropertyName")
-data class User(
-    //val bio_links: List<BioLink>?,
+@Suppress("MemberVisibilityCanBePrivate", "PropertyName")
+class User(
+    //val bio_links: Array<BioLink>?,
     val biography: String?,
     //val friendship_status: Map<String, Any?>?,
     val full_name: String?,
     val hd_profile_pic_url_info: Media.Version?, // available via USER_INFO (highest quality)
-    val hd_profile_pic_versions: List<Media.Version>?, // available via USER_INFO
+    val hd_profile_pic_versions: Array<Media.Version>?, // available via USER_INFO
     val id: String?,
     val is_private: Boolean?,
     //val is_unpublished: Boolean?,
     val pk: String?,
     val profile_pic_url: String?,
     val profile_pic_url_hd: String?, // available via PROFILE_INFO
-    val pronouns: List<String>?,
+    val pronouns: Array<String>?,
     val username: String?,
 ) {
 
@@ -28,9 +28,9 @@ data class User(
         ?: profile_pic_url
 
 
-    /*data class BioLink(val title: String, val url: String)*/
+    /*class BioLink(val title: String, val url: String)*/
 
-    /*data class FriendshipStatus(
+    /*class FriendshipStatus(
         //val blocking: Boolean?, // only in mute/unmute and show(one)
         //val followed_by: Boolean?, // only in mute/unmute and show(one)
         //val following: Boolean,

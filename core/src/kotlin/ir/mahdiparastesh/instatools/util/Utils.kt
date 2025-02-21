@@ -10,7 +10,6 @@ object Utils {
     const val POST_LINK = "https://www.instagram.com/p/%s/"
     const val REEL_LINK = "https://www.instagram.com/reel/%s/"
     const val STORY_LINK = "https://www.instagram.com/stories/%1\$s/%2\$s/"
-    const val REST_STATUS_OK = "ok"
 
     /** Helper class for turning 1 to "01". */
     fun z(n: Int): String {

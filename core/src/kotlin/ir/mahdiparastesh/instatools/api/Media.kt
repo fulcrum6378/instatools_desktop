@@ -3,21 +3,21 @@ package ir.mahdiparastesh.instatools.api
 import ir.mahdiparastesh.instatools.util.Utils
 import kotlin.math.abs
 
-@Suppress("PropertyName")
-data class Media(
+@Suppress("MemberVisibilityCanBePrivate", "PropertyName")
+class Media(
     //val can_reply: Boolean?,
     val caption: Caption?,
-    val carousel_media: List<Media>?,
+    val carousel_media: Array<Media>?,
     //val carousel_media_count: Float?,
-    //val carousel_media_ids: List<String>?,
-    //val coauthor_producers: List<User>?,
+    //val carousel_media_ids: Array<String>?,
+    //val coauthor_producers: Array<User>?,
     val code: String?,
     //val comment_count: Float?,
     val has_audio: Boolean?,
     val has_liked: Boolean?,
     val has_viewer_saved: Boolean?,
     val id: String, // <media ID>_<user ID>
-    //val invited_coauthor_producers: List<User>?,
+    //val invited_coauthor_producers: Array<User>?,
     val image_versions2: ImageVersions2,
     //val like_count: Double?,
     //val location: Map<String, Any?>?,
@@ -33,7 +33,7 @@ data class Media(
     val taken_at: Double,
     val user: User?,
     val video_dash_manifest: String?,
-    val video_versions: List<Version>?,
+    val video_versions: Array<Version>?,
     //val view_count: Double?,
 ) {
 
@@ -78,17 +78,17 @@ data class Media(
     }
 
 
-    data class Caption(
-        val created_at: Double,
+    class Caption(
+        //val created_at: Double,
         val pk: String,
         val text: String,
         val user: User?,
-        val user_id: String?,
+        //val user_id: String?,
     )
 
-    data class ImageVersions2(val candidates: List<Version>)
+    class ImageVersions2(val candidates: Array<Version>)
 
-    data class Version(
+    class Version(
         val url: String,
         val height: Float,
         val width: Float,
@@ -104,7 +104,7 @@ data class Media(
             const val THUMB = -3f  // used only in Exporter
 
             fun pick(
-                list: List<Version>,
+                list: Array<Version>,
                 ideal: Float,
                 original: Pair<Float, Float>? = null,
             ): String? = when (ideal) {
@@ -115,7 +115,7 @@ data class Media(
             }
 
             fun best(
-                list: List<Version>,
+                list: Array<Version>,
                 original: Pair<Float, Float>? = null,
             ): String? {
                 var ret: String?
@@ -132,11 +132,11 @@ data class Media(
                 return ret
             }
 
-            fun medium(list: List<Version>): String? =
+            fun medium(list: Array<Version>): String? =
                 list.getOrNull(if (list.size <= 1) 0 else list.size / 2)?.url
 
 
-            fun worst(list: List<Version>): String? {
+            fun worst(list: Array<Version>): String? {
                 var minW = 1000f
                 var minH = 1000f
                 list.forEach {
@@ -148,7 +148,7 @@ data class Media(
             }
 
             fun nearest(
-                list: List<Version>,
+                list: Array<Version>,
                 ideal: Float,
                 original: Pair<Float, Float>? = null,
             ): String? {
@@ -174,6 +174,7 @@ data class Media(
         }
     }
 
+    @Suppress("unused")
     enum class Type(val num: Byte) {
         IMAGE(1),
         VIDEO(2),

@@ -23,8 +23,7 @@ class Tagged(override val p: Profile) : LazyLister<Media>(), Profile.Section {
                 GraphQlQuery.PROFILE_TAGGED.body(p.userId!!, "36")
             else
                 GraphQlQuery.PROFILE_TAGGED_CURSORED.body(p.userId!!, "36", cursor!!)
-        ).data?.xdt_api__v1__usertags__user_id__feed_connection
-        if (page == null) throw Api.FailureException(-3)
+        ).data!!.xdt_api__v1__usertags__user_id__feed_connection!!
 
         var caption: String
         for (e in page.edges) {

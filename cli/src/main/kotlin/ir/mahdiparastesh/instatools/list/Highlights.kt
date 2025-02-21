@@ -12,7 +12,7 @@ class Highlights(override val p: Profile) : Lister<Media>(), Profile.Section {
     private val trays: HashMap<String, Story> = hashMapOf()
     private var currentTray: String? = null
     override var list: ArrayList<Media>?
-        get() = trays[currentTray!!]!!.items!! as ArrayList
+        get() = currentTray?.let { trays[it]?.items }
         set(_) {}
     override val numberOfClauses: Int = 2
 
@@ -22,8 +22,7 @@ class Highlights(override val p: Profile) : Lister<Media>(), Profile.Section {
         val hls = api.call<GraphQl>(
             Api.Endpoint.QUERY.url, GraphQl::class, true,
             GraphQlQuery.PROFILE_HIGHLIGHTS_TRAY.body(p.userId!!)
-        ).data?.highlights?.edges
-        if (hls == null) throw Api.FailureException(-3)
+        ).data!!.highlights!!.edges
 
         if (hls.isEmpty()) println("This user has no highlighted stories.")
         else hls.forEachIndexed { _, tray ->
@@ -56,8 +55,7 @@ class Highlights(override val p: Profile) : Lister<Media>(), Profile.Section {
             val page = api.call<GraphQl>(
                 Api.Endpoint.QUERY.url, GraphQl::class, true,
                 GraphQlQuery.HIGHLIGHTS.body(apiId, apiId)
-            ).data?.xdt_api__v1__feed__reels_media__connection
-                ?: throw Api.FailureException(-3)
+            ).data!!.xdt_api__v1__feed__reels_media__connection!!
             page.edges.forEach { tray ->
                 tray.node.items = ArrayList(tray.node.items!!)
                 trays[currentTray!!] = tray.node

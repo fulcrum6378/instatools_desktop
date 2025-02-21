@@ -4,25 +4,25 @@ package ir.mahdiparastesh.instatools.api
 interface Rest {
     val status: String
 
-    //data class QuickResponse(override val status: String) : Rest
+    //class QuickResponse(override val status: String) : Rest
 
-    data class LazyList<N>(
+    class LazyList<N>(
         //val auto_load_more_enabled: Boolean,
-        val items: List<N>,
+        val items: Array<N>,
         val more_available: Boolean,
         val next_max_id: String?,
         //val num_results: Float, // in current fetch, not real total
         override val status: String,
     ) : Rest
 
-    data class SavedItem(val media: Media)
+    class SavedItem(val media: Media)
 
-    data class UserInfo(
+    class UserInfo(
         val user: User,
         override val status: String
     ) : Rest
 
-    data class InboxPage(
+    class InboxPage(
         //val viewer: User,
         val inbox: Message.Inbox,
         //val seq_id: String,
@@ -32,7 +32,7 @@ interface Rest {
         override val status: String
     ) : Rest
 
-    data class InboxThread(
+    class InboxThread(
         val thread: Message.DmThread,
         override val status: String
     ) : Rest

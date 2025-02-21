@@ -1,7 +1,6 @@
 package ir.mahdiparastesh.instatools.api
 
 import com.google.gson.Gson
-import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
 import ir.mahdiparastesh.instatools.util.Utils
 import java.io.File
@@ -60,23 +59,28 @@ class Api {
         if (isPost && body != null) {
             con.doOutput = true
             con.setRequestProperty("content-type", "application/x-www-form-urlencoded")
-            con.outputStream.bufferedWriter().use { it.write(body) }
             if (System.getenv("debug") == "1")
                 println("Post Body: $body")
         }
 
         val responseCode = try {
+            if (isPost && body != null)
+                con.outputStream.bufferedWriter().use { it.write(body) }
             con.responseCode
-        } catch (_: SocketTimeoutException) {
+        } catch (_: UnknownHostException) {
             throw FailureException(-1)
-        } catch (_: ProtocolException) {
+        } catch (_: ConnectException) {
+            throw FailureException(if (proxy != Proxy.NO_PROXY) -10 else -2)
+        } catch (_: SocketTimeoutException) {
+            throw FailureException(-2)
+        } catch (_: ProtocolException) { // more than 20 redirections!
             throw FailureException(-4)
         }
 
         val text = if (responseCode == 200) try {
             con.inputStream.bufferedReader().readText()
         } catch (_: IOException) {
-            throw FailureException(-2)
+            throw FailureException(-3)
         } else
             throw FailureException(responseCode)
 
@@ -84,18 +88,18 @@ class Api {
             println(text)
             //FileOutputStream(File("Downloads/1.json")).use { it.write(text.encodeToByteArray()) }
         }
+        if (text.startsWith("<!DOCTYPE html>"))
+            throw FailureException(-4)
 
-        try {
-            return Gson().fromJson(
-                text,
-                if (generics != null) TypeToken.getParameterized(
-                    clazz.java, *generics.map { it.java }.toTypedArray()
-                ).type else clazz.java
-            ) as JSON
-        } catch (_: JsonSyntaxException) {
-            println(text)
-            throw FailureException(-3)
-        }
+        val json = Gson().fromJson(
+            text,
+            if (generics != null) TypeToken.getParameterized(
+                clazz.java, *generics.map { it.java }.toTypedArray()
+            ).type else clazz.java
+        ) as JSON
+        if (clazz == GraphQl::class && (json as GraphQl).data == null)
+            throw FailureException(-5)
+        return json
     }
 
     fun page(url: String): String {
@@ -124,7 +128,7 @@ class Api {
         if (responseCode == 200) try {
             return con.inputStream.bufferedReader().readText()
         } catch (_: IOException) {
-            throw FailureException(-2)
+            throw FailureException(-3)
         } else
             throw FailureException(responseCode)
     }
@@ -149,25 +153,19 @@ class Api {
         FOLLOWING("https://www.instagram.com/api/v1/friendships/%1\$s/following/?count=200&max_id=%2\$s"),
         FRIENDSHIPS_MANY("https://www.instagram.com/api/v1/friendships/show_many/"),
         FRIENDSHIP("https://www.instagram.com/api/v1/friendships/show/%s/"), // GET
-        FOLLOW("https://www.instagram.com/api/v1/friendships/create/%s/"),
-        UNFOLLOW("https://www.instagram.com/api/v1/friendships/destroy/%s/"),
-        MUTE("https://www.instagram.com/api/v1/friendships/mute_posts_or_story_from_follow/"),
-        UNMUTE("https://www.instagram.com/api/v1/friendships/unmute_posts_or_story_from_follow/"),
-        RESTRICT("https://www.instagram.com/api/v1/web/restrict_action/restrict/"),
-        UNRESTRICT("https://www.instagram.com/api/v1/web/restrict_action/unrestrict/"),
-        BLOCK("https://www.instagram.com/api/v1/web/friendships/%d/block/"),
-        UNBLOCK("https://www.instagram.com/api/v1/web/friendships/%d/unblock/"),
 
         // logging in/out
         LOGOUT("https://www.instagram.com/accounts/logout/ajax/")
     }
 
-    class FailureException(status: Int) : IllegalStateException(
+    inner class FailureException(status: Int) : IllegalStateException(
         "API ERROR: " + when (status) {
-            -1 -> "Couldn't connect to Instagram!"
-            -2 -> "Connection was broken!"
-            -3 -> "Invalid response from Instagram!"
-            -4, 401 -> "You've been logged out!" + (if (status == 401) " (HTTP error $status 401)" else "")
+            -1 -> "No internet connection!"
+            -2 -> "Couldn't connect to Instagram!"
+            -3 -> "Connection was broken!"
+            -4, 401 -> "You've been logged out!" + (if (status == 401) " (HTTP error code $status)" else "")
+            -5 -> "Operation failed; presumably you've been logged out!"
+            -10 -> "Couldn't connect to the proxy server!"
             404 -> "Not found!"
             429 -> "Too many requests!"
             else -> "HTTP error code $status!"

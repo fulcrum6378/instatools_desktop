@@ -3,14 +3,14 @@ package ir.mahdiparastesh.instatools.api
 import java.net.URLEncoder
 
 @Suppress(
-    "PrivatePropertyName", "SpellCheckingInspection", "KDocUnresolvedReference", "unused"
+    "KDocUnresolvedReference", "PrivatePropertyName", "SpellCheckingInspection", "unused"
 )
 enum class GraphQlQuery(
     private val doc_id: String,
     private val variables: String,
 ) {
     /**
-     * PolarisProfilePostsQuery
+     * PolarisProfilePostsQuery (sometimes works without login)
      * @param username [User.username]
      * @param count default: 12, maximum: 33
      * @param after [Media.id] of the last item in the previous fetch

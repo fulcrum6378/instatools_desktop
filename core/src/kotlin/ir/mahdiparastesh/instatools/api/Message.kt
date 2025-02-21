@@ -1,7 +1,7 @@
 package ir.mahdiparastesh.instatools.api
 
-@Suppress("PropertyName")
-data class Message(
+@Suppress("MemberVisibilityCanBePrivate", "PropertyName")
+class Message(
     val item_id: String,
     val message_id: String,
     val user_id: Double,
@@ -39,18 +39,18 @@ data class Message(
     // in DM this time as a SQUARE and also appears in "Videos" section.
 ) {
 
-    data class Inbox(
-        val threads: List<DmThread>,
+    class Inbox(
+        val threads: Array<DmThread>,
         val has_older: Boolean,
         val oldest_cursor: String?,
     )
 
-    data class DmThread(
+    class DmThread(
         var has_older: Boolean,
-        var items: List<Message>,
+        var items: ArrayList<Message>,
         val thread_id: String,
         val thread_v2_id: String,
-        val users: List<User>,
+        val users: Array<User>,
         val thread_title: String,
         val is_group: Boolean,
         val folder: Float,
@@ -58,9 +58,9 @@ data class Message(
         fun title() = if (!is_group) users.getOrNull(0)?.visName() else thread_title
     }
 
-    data class Reactions(val emojis: List<Emoji>)
+    class Reactions(val emojis: Array<Emoji>)
 
-    data class Emoji(
+    class Emoji(
         val timestamp: Double,
         val sender_id: Double,
         val emoji: String,
@@ -69,33 +69,33 @@ data class Message(
 
     class ActionLog
 
-    data class AnimatedMedia(val images: AnimatedMediaImages)
+    class AnimatedMedia(val images: AnimatedMediaImages)
 
-    data class AnimatedMediaImages(val fixed_height: AnimatedMediaImage)
+    class AnimatedMediaImages(val fixed_height: AnimatedMediaImage)
 
-    data class AnimatedMediaImage(
+    class AnimatedMediaImage(
         val height: String,
         val size: String,
         val url: String,
         val width: String,
     )
 
-    data class ClipShare(val clip: Media)
+    class ClipShare(val clip: Media)
 
-    data class DirectMediaShare(val text: String, val media: Media)
+    class DirectMediaShare(val text: String, val media: Media)
 
-    data class FelixShare(
+    class FelixShare(
         val video: Media,
         val text: String?,
         override val title: String?,
         override val message: String?,
     ) : PlaceHolder
 
-    data class Link(val link_context: LinkContext, val text: String)
+    class Link(val link_context: LinkContext, val text: String)
 
-    data class LinkContext(val link_url: String)
+    class LinkContext(val link_url: String)
 
-    data class LiveViewerInvite(
+    class LiveViewerInvite(
         val broadcast: LiveBroadcast?,
         val cta_button_name: String,
         val text: String,
@@ -103,9 +103,9 @@ data class Message(
         override val message: String?,
     ) : PlaceHolder
 
-    data class LiveBroadcast(val broadcast_owner: User)
+    class LiveBroadcast(val broadcast_owner: User)
 
-    data class ReelShare(
+    class ReelShare(
         val media: Media?,
         val reel_type: String,
         val text: String,
@@ -113,7 +113,7 @@ data class Message(
         override val message: String?,
     ) : PlaceHolder
 
-    data class StoryShare(
+    class StoryShare(
         val media: Media?,
         val reel_id: String?,
         val reel_type: String?,
@@ -122,13 +122,13 @@ data class Message(
         override val message: String?,
     ) : PlaceHolder
 
-    data class Voice(val media: VoiceMedia?)
+    class Voice(val media: VoiceMedia?)
 
-    data class VoiceMedia(val audio: Audio)
+    class VoiceMedia(val audio: Audio)
 
-    data class Audio(val audio_src: String)
+    class Audio(val audio_src: String)
 
-    data class VideoCallEvent(val action: String, val description: String)
+    class VideoCallEvent(val action: String, val description: String)
 
     interface PlaceHolder {
         val title: String?

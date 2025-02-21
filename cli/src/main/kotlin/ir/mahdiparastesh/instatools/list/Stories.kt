@@ -19,8 +19,7 @@ class Stories(override val p: Profile) : Lister<Media>(), Profile.Section {
         p.requireUserId()
         val reels = api.call<GraphQl>(
             Api.Endpoint.QUERY.url, GraphQl::class, true, GraphQlQuery.STORY.body(p.userId!!)
-        ).data?.xdt_api__v1__feed__reels_media?.reels_media
-        if (reels == null) throw Api.FailureException(-3)
+        ).data!!.xdt_api__v1__feed__reels_media!!.reels_media
 
         val media = reels.firstOrNull()?.items
         if (media.isNullOrEmpty())

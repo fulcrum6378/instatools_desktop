@@ -40,9 +40,7 @@ object SimpleJobs {
 
     /** If a user doesn't exist, HTTP error code 404 will be thrown! */
     fun profileInfo(userName: String): User =
-        api.call<GraphQl>(Api.Endpoint.PROFILE_INFO.url.format(userName), GraphQl::class).data
-            ?.let { it.user!! }
-            ?: throw Api.FailureException(-3)
+        api.call<GraphQl>(Api.Endpoint.PROFILE_INFO.url.format(userName), GraphQl::class).data!!.user!!
 
     /** Performs a GraphQL action on a post/reel/story. */
     fun actionMedia(

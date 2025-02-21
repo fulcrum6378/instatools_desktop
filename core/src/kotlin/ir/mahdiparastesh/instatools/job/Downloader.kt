@@ -52,7 +52,7 @@ class Downloader : Queuer<Downloader.Queued>() {
         start()
     }
 
-    // FIXME status messages should be customised per module
+    /** Contains CLI-specific codes! */
     override fun handle(q: Queued) {
         // prepare the path
         val extension = q.extension()
@@ -144,6 +144,7 @@ class Downloader : Queuer<Downloader.Queued>() {
         fun extension() = URI(url).path.split(".").last()
     }
 
-    class FailureException : IllegalStateException("Couldn't download from Instagram!"),
+    inner class FailureException :
+        IllegalStateException("Couldn't download from Instagram!"),
         Utils.InstaToolsException
 }
