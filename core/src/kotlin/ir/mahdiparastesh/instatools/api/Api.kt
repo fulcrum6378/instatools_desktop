@@ -53,6 +53,7 @@ class Api {
         con.setRequestProperty("x-ig-app-id", "936619743392459")
         con.setRequestProperty("cookie", cookies)
 
+        con.useCaches = false
         con.connectTimeout = connectTimeout
         con.doInput = true
         con.readTimeout = 10000
@@ -113,12 +114,17 @@ class Api {
         )
         con.setRequestProperty("cookie", cookies)
 
+        con.useCaches = false
         con.connectTimeout = connectTimeout
         con.doInput = true
         con.readTimeout = 12000
 
         val responseCode = try {
             con.responseCode
+        } catch (_: UnknownHostException) {
+            throw FailureException(-1)
+        } catch (_: ConnectException) {
+            throw FailureException(if (proxy != Proxy.NO_PROXY) -10 else -2)
         } catch (_: SocketTimeoutException) {
             throw FailureException(-1)
         } catch (_: ProtocolException) {

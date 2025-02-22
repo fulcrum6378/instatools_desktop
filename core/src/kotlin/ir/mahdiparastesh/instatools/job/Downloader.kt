@@ -10,12 +10,11 @@ import org.apache.commons.imaging.formats.jpeg.exif.ExifRewriter
 import org.apache.commons.imaging.formats.tiff.constants.ExifTagConstants
 import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants
 import org.apache.commons.imaging.formats.tiff.write.TiffOutputSet
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
-import java.io.InputStream
+import java.io.*
+import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.URI
+import java.net.UnknownHostException
 import javax.net.ssl.HttpsURLConnection
 
 /** Downloads media and saves them. */
@@ -64,9 +63,9 @@ class Downloader : Queuer<Downloader.Queued>() {
         }
 
         // download the file
-        var binary: InputStream? = null
+        var stream: InputStream? = null
         var retry = -1
-        while (binary == null) {
+        while (stream == null) {
             retry++
             if (retry > 0) {
                 if (retry > 5) throw FailureException()
@@ -84,48 +83,60 @@ class Downloader : Queuer<Downloader.Queued>() {
             }
             try {
                 con.connect()
+            } catch (_: UnknownHostException) {
+                continue
+            } catch (_: ConnectException) {
+                continue
             } catch (_: SocketTimeoutException) {
                 continue
             }
 
             if (con.responseCode == 200) try {
-                binary = con.inputStream
+                stream = con.inputStream
             } catch (_: IOException) {
             }
         }
 
         // save the file
         val fos = FileOutputStream(file)
-        when (extension) {
-            "jpg" -> {
-                val ba = binary.readAllBytes()
-                val outputSet = (Imaging.getMetadata(ba) as JpegImageMetadata?)?.exif?.outputSet
-                    ?: TiffOutputSet()
-                outputSet.orCreateRootDirectory.apply {
-                    removeField(TiffTagConstants.TIFF_TAG_IMAGE_DESCRIPTION) // Title + Subject
-                    if (q.link != null) add(TiffTagConstants.TIFF_TAG_IMAGE_DESCRIPTION, q.link)
-                    removeField(ExifTagConstants.EXIF_TAG_SOFTWARE)
-                    add(ExifTagConstants.EXIF_TAG_SOFTWARE, Utils.APP_NAME)
-                    removeField(TiffTagConstants.TIFF_TAG_ARTIST) // Authors
-                    add(TiffTagConstants.TIFF_TAG_ARTIST, q.owner)
-                    removeField(TiffTagConstants.TIFF_TAG_COPYRIGHT)
-                    add(TiffTagConstants.TIFF_TAG_COPYRIGHT, "IG: @${q.owner}")
-                }
-                outputSet.orCreateExifDirectory.apply {
-                    q.caption?.also {
-                        removeField(ExifTagConstants.EXIF_TAG_USER_COMMENT)
-                        add(ExifTagConstants.EXIF_TAG_USER_COMMENT, it)
-                    }
-                    removeField(ExifTagConstants.EXIF_TAG_SITE)
-                    add(ExifTagConstants.EXIF_TAG_SITE, q.link)
-                }
-                ExifRewriter().updateExifMetadataLossless(ba, fos, outputSet)
+        try {
+            when (extension) {
+                "jpg" -> writeJpeg(q, stream.readAllBytes(), fos)
+                else -> stream.copyTo(fos)
+                // TODO metadata for MP4 and WEBP?
             }
-
-            else -> binary.copyTo(fos) // TODO metadata for videos, PNG, WEBP, etc?
+        } catch (_: IOException) {
+            throw FailureException()
         }
+        stream.close()
         fos.close()
         println("Downloaded $fileName")
+    }
+
+    @Throws(IOException::class)
+    private fun writeJpeg(q: Queued, `in`: ByteArray, out: OutputStream) {
+        val outputSet = (Imaging.getMetadata(`in`) as JpegImageMetadata?)?.exif?.outputSet
+            ?: TiffOutputSet()
+        outputSet.orCreateRootDirectory.apply {
+            removeField(TiffTagConstants.TIFF_TAG_IMAGE_DESCRIPTION) // Title + Subject
+            if (q.link != null) add(TiffTagConstants.TIFF_TAG_IMAGE_DESCRIPTION, q.link)
+            removeField(ExifTagConstants.EXIF_TAG_SOFTWARE)
+            add(ExifTagConstants.EXIF_TAG_SOFTWARE, Utils.APP_NAME)
+            removeField(TiffTagConstants.TIFF_TAG_ARTIST) // Authors
+            add(TiffTagConstants.TIFF_TAG_ARTIST, q.owner)
+            removeField(TiffTagConstants.TIFF_TAG_COPYRIGHT)
+            add(TiffTagConstants.TIFF_TAG_COPYRIGHT, "IG: @${q.owner}")
+        }
+        outputSet.orCreateExifDirectory.apply {
+            q.caption?.also {
+                removeField(ExifTagConstants.EXIF_TAG_USER_COMMENT)
+                add(ExifTagConstants.EXIF_TAG_USER_COMMENT, it)
+            }
+            removeField(ExifTagConstants.EXIF_TAG_SITE)
+            add(ExifTagConstants.EXIF_TAG_SITE, q.link)
+        }
+        // TODO location data?
+        ExifRewriter().updateExifMetadataLossless(`in`, out, outputSet)
     }
 
     /** Data structure for information of a media. */
